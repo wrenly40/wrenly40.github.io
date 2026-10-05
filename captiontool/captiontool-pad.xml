@@ -71,9 +71,8 @@ For comparison, the subscription caption services charge about this much every m
 <Application_XML_File_URL>https://wrenly40.github.io/captiontool/captiontool-pad.xml</Application_XML_File_URL>
 </Application_URLs>
 <Download_URLs>
-<Primary_Download_URL>https://github.com/wrenly40/captiontool/releases/download/v1.1.0/CaptionTool-Windows-x86_64.exe</Primary_Download_URL>
-<Secondary_Download_URL>https://github.com/wrenly40/captiontool/releases/download/v1.1.0/CaptionTool-macOS-arm64.zip</Secondary_Download_URL>
-<Additional_Download_URL_1>https://github.com/wrenly40/captiontool/releases/download/v1.1.0/CaptionTool-Linux-x86_64.deb</Additional_Download_URL_1>
+<Primary_Download_URL>https://wrenly40.gumroad.com/l/captiontool</Primary_Download_URL>
+<Secondary_Download_URL>https://wrenly40.gumroad.com/l/captiontool</Secondary_Download_URL>
 </Download_URLs>
 </Web_Info>
 </PADGEN>
