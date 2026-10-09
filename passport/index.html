@@ -109,7 +109,7 @@
     ctx.font = "28px -apple-system, sans-serif"; ctx.fillStyle = "#a3a099";
     wrap(ctx, medalSummary(), 70, 280, 1050, 42);
     var pts = ArcadeAPI.getChampionship();
-    ctx.fillText("One new game every Friday · wrenly40.github.io/arcade", 70, 545);
+    ctx.fillText("One new game every Friday · wrenly40.github.io", 70, 545);
     c.style.display = "block";
     document.getElementById("card-actions").style.display = "block";
     document.getElementById("card-download").href = c.toDataURL("image/png");
@@ -125,7 +125,7 @@
   }
   document.getElementById("card-copy").addEventListener("click", function () {
     var text = "My Wrenworks Arcade passport — " + medalSummary() +
-      ". One new game every Friday: wrenly40.github.io/arcade";
+      ". One new game every Friday: wrenly40.github.io";
     if (navigator.clipboard) navigator.clipboard.writeText(text);
   });
 })();
