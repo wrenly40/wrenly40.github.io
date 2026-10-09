@@ -48,11 +48,6 @@
   <img class="hero-shot" src="games/the-night-log/assets/nightlog-case.png" alt="A Night Log case file: the scene, the sounds, and where everyone was at each bell">
 </section>
 
-<section class="section">
-  <h2>One game a week</h2>
-  <p class="muted">Every Friday a new game opens here — a different kind of game from the last, free, in your browser, with no downloads and no accounts. A game is playable for its week. When the next one arrives, it moves to the Vault: its page, its scores and its medals stay, but it cannot be played again — unless players ask for it back, loudly enough, and often enough.</p>
-</section>
-
 <section class="section" aria-labelledby="signup-h">
   <h2 id="signup-h">Get the next game in your inbox</h2>
   <p class="muted">One email each Friday, when the new game opens. Nothing else, no selling your address, unsubscribe in one click. Joining takes one extra click: the list service emails you to confirm the address is yours.</p>
@@ -64,17 +59,6 @@
     <input type="email" name="email_address" required placeholder="you@example.com" aria-label="Email address">
     <button class="btn" type="submit">Tell me when it drops</button>
   </form>
-</section>
-
-<section class="section">
-  <h2>Your record</h2>
-  <p class="muted">Finishing games earns championship points, and medals earn more. <a href="championship/index.html">How points work</a>. The table below is your own record, kept in this browser.</p>
-  <div id="champ-home"><p class="muted">No points yet. The first names on this table are still to be earned.</p></div>
-</section>
-
-<section class="section">
-  <h2>The Vault</h2>
-  <p class="muted">Games that have had their week rest here — pages, scores and medals kept, doors locked. <a href="vault/index.html">Visit the Vault</a>.</p>
 </section>
 
 </main>
@@ -99,15 +83,6 @@
   }
   btn.addEventListener("click", function () { ArcadeAPI.like(slug); renderLike(); });
   renderLike();
-
-  var table = ArcadeAPI.getChampionship();
-  if (table.length) {
-    var html = '<table class="board"><tr><th>Player</th><th class="num">Points</th></tr>';
-    table.slice(0, 10).forEach(function (r) {
-      html += "<tr><td>" + r.name.replace(/</g, "&lt;") + '</td><td class="num">' + r.points + "</td></tr>";
-    });
-    document.getElementById("champ-home").innerHTML = html + "</table>";
-  }
 })();
 </script>
 </body>

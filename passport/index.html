@@ -39,7 +39,7 @@
 <label class="small muted" for="player-name">Name shown on leaderboards (a nickname, never your real name or email):</label>
 <p class="signup" style="margin-top:0.3rem">
   <input type="text" id="name-input" maxlength="24" placeholder="e.g. NightOwl"
-    style="flex:1 1 16rem;padding:0.6rem 0.8rem;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-size:1rem">
+    style="flex:1 1 16rem;padding:0.6rem 0.8rem;border-radius:7px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-size:1rem">
   <button class="btn ghost" id="name-save" type="button">Save name</button>
 </p>
 <p class="muted small" id="name-msg" role="status"></p>
@@ -100,13 +100,13 @@
   document.getElementById("card-btn").addEventListener("click", function () {
     var c = document.getElementById("card");
     var ctx = c.getContext("2d");
-    ctx.fillStyle = "#101013"; ctx.fillRect(0, 0, 1200, 630);
-    ctx.strokeStyle = "#2fbfae"; ctx.lineWidth = 3; ctx.strokeRect(28, 28, 1144, 574);
-    ctx.fillStyle = "#ece9e2"; ctx.font = "700 54px Georgia, serif";
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 1200, 630);
+    ctx.strokeStyle = "#141310"; ctx.lineWidth = 3; ctx.strokeRect(28, 28, 1144, 574);
+    ctx.fillStyle = "#141310"; ctx.font = "700 54px Georgia, serif";
     ctx.fillText("Wrenworks Arcade — Passport", 70, 130);
-    ctx.font = "32px Georgia, serif"; ctx.fillStyle = "#ece5d3";
+    ctx.font = "32px Georgia, serif"; ctx.fillStyle = "#141310";
     ctx.fillText(ArcadeAPI.getName() || "A player", 70, 200);
-    ctx.font = "28px -apple-system, sans-serif"; ctx.fillStyle = "#a3a099";
+    ctx.font = "28px -apple-system, sans-serif"; ctx.fillStyle = "#6d6a61";
     wrap(ctx, medalSummary(), 70, 280, 1050, 42);
     var pts = ArcadeAPI.getChampionship();
     ctx.fillText("One new game every Friday · wrenly40.github.io", 70, 545);

@@ -1,15 +1,15 @@
 /* Wrenworks Arcade — shell styles.
-   Sleek, minimalist, modern: near-black, one accent (the studio teal),
-   open sections separated by whitespace and hairlines, no card clutter.
+   Simple monochrome light palette: warm off-white page, ink text,
+   hairlines and whitespace instead of boxes. No accent colour in the
+   shell at all — the only colour on a page lives inside the game art.
    The games keep their own art direction in their own stylesheets. */
 :root {
-  --bg: #0a0a0c;
-  --panel-2: #141419;
-  --line: #222228;
-  --ink: #f4f2ec;
-  --muted: #a09c94;
-  --accent: #2fbfae;
-  --accent-ink: #052e29;
+  --bg: #fbfbf9;
+  --surface: #ffffff;
+  --soft: #f2f1ec;
+  --line: #e4e2da;
+  --ink: #141310;
+  --muted: #6d6a61;
   --radius: 14px;
 }
 
@@ -38,7 +38,7 @@ header.site .brand {
   font-size: 1.02rem; font-weight: 650; letter-spacing: -0.01em;
   color: var(--ink); text-decoration: none;
 }
-header.site .brand span { color: var(--accent); }
+header.site .brand span { color: var(--ink); }
 header.site nav { display: flex; flex-wrap: wrap; gap: 0.2rem 1.35rem; }
 header.site nav a { color: var(--muted); text-decoration: none; font-size: 0.92rem; }
 header.site nav a:hover { color: var(--ink); text-decoration: none; }
@@ -49,15 +49,15 @@ h1 { font-size: clamp(2rem, 5vw, 2.8rem); line-height: 1.1; letter-spacing: -0.0
 h2 { font-size: 1.22rem; line-height: 1.25; letter-spacing: -0.01em; font-weight: 650; margin: 2.4rem 0 0.55rem; }
 h3 { font-size: 1.02rem; margin: 1.4rem 0 0.4rem; }
 p { margin: 0.55rem 0; }
-a { color: var(--accent); text-decoration: none; }
+a { color: var(--ink); text-decoration: underline; text-underline-offset: 0.14em; }
 a:hover { text-decoration: underline; }
 .muted { color: var(--muted); }
 .small { font-size: 0.92rem; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 .kicker {
   text-transform: uppercase; letter-spacing: 0.18em; font-size: 0.72rem;
-  font-weight: 600; color: var(--accent); margin: 0;
+  font-weight: 600; color: var(--ink); margin: 0;
 }
 
 /* Open sections: whitespace and a hairline, never a box */
@@ -74,18 +74,19 @@ a:hover { text-decoration: underline; }
 .hero-shot {
   display: block; width: 100%; height: auto; margin-top: 2.4rem;
   border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: 0 18px 44px rgba(20, 19, 16, 0.10), 0 2px 8px rgba(20, 19, 16, 0.05);
 }
 
-/* Buttons — one accent, pill shape */
+/* Buttons — ink on paper, pill shape */
 .btn {
   display: inline-block; padding: 0.62rem 1.45rem; border-radius: 999px;
-  background: var(--accent); color: var(--accent-ink); font-weight: 650; text-decoration: none;
-  border: 1px solid var(--accent); cursor: pointer; font-size: 1rem; line-height: 1.35;
+  background: var(--ink); color: #ffffff; font-weight: 650; text-decoration: none;
+  border: 1px solid var(--ink); cursor: pointer; font-size: 1rem; line-height: 1.35;
 }
-.btn:hover { opacity: 0.88; text-decoration: none; }
+.btn:hover { opacity: 0.85; text-decoration: none; }
 .btn.large { padding: 0.95rem 2.3rem; font-size: 1.1rem; }
 .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 550; }
-.btn.ghost:hover { border-color: var(--accent); color: var(--accent); opacity: 1; }
+.btn.ghost:hover { opacity: 0.7; }
 .btn:disabled { opacity: 0.45; cursor: default; }
 
 /* Boards — bare tables, hairline rows */
@@ -98,7 +99,7 @@ table.board td.num, table.board th.num { text-align: right; }
 .signup { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 1rem 0 0.4rem; max-width: 40rem; }
 .signup input[type="email"], .signup input[type="text"] {
   flex: 1 1 16rem; padding: 0.62rem 1.1rem; border-radius: 999px;
-  border: 1px solid var(--line); background: var(--panel-2); color: var(--ink);
+  border: 1px solid var(--line); background: var(--soft); color: var(--ink);
   font-size: 1rem;
 }
 .signup input::placeholder { color: var(--muted); }
@@ -109,13 +110,13 @@ table.board td.num, table.board th.num { text-align: right; }
   background: transparent; color: var(--muted); border: 1px solid var(--line);
   border-radius: 999px; padding: 0.35rem 0.95rem; cursor: pointer; font-size: 0.92rem;
 }
-.like-btn:hover { color: var(--ink); border-color: var(--muted); }
-.like-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.like-btn:hover { color: var(--ink); }
+.like-btn[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #ffffff; }
 
 /* Game page screenshots — borderless, rounded, quiet captions */
 .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1.4rem; margin: 1.6rem 0; }
 .shots figure { margin: 0; }
-.shots img { width: 100%; border-radius: var(--radius); display: block; }
+.shots img { width: 100%; border-radius: var(--radius); display: block; border: 1px solid var(--line); }
 .shots figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 0.5rem; }
 
 footer.site {
