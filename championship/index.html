@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Arcade Championship — The Wrenworks Arcade</title>
-<meta name="description" content="The all-time Arcade Championship: points for finishing games and winning medals across every game in the Wrenworks Arcade.">
+<title>The Night Log Championship — The Wrenworks Arcade</title>
+<meta name="description" content="The championship for this week's game, The Night Log: your points and medals for this game, kept in your browser for now.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Wrenworks Arcade">
-<meta property="og:title" content="Arcade Championship — The Wrenworks Arcade">
-<meta property="og:description" content="The Arcade Championship: your points for finishing games and winning medals across the Wrenworks Arcade, kept in your browser for now.">
+<meta property="og:title" content="The Night Log Championship — The Wrenworks Arcade">
+<meta property="og:description" content="The championship for this week's game, The Night Log: your points and medals for this game, kept in your browser for now.">
 <meta property="og:url" content="https://wrenly40.github.io/championship/">
 <meta property="og:image" content="https://wrenly40.github.io/games/the-night-log/assets/nightlog-case.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Arcade Championship — The Wrenworks Arcade">
-<meta name="twitter:description" content="The Arcade Championship: your points for finishing games and winning medals across the Wrenworks Arcade, kept in your browser for now.">
+<meta name="twitter:title" content="The Night Log Championship — The Wrenworks Arcade">
+<meta name="twitter:description" content="The championship for this week's game, The Night Log: your points and medals for this game, kept in your browser for now.">
 <meta name="twitter:image" content="https://wrenly40.github.io/games/the-night-log/assets/nightlog-case.png">
 <link rel="stylesheet" href="../arcade.css">
 </head>
@@ -25,40 +25,42 @@
   <nav>
     <a href="../index.html">This week</a>
     <a href="index.html" class="here">Championship</a>
-    <a href="../passport/index.html">Passport</a>
     <a href="../vault/index.html">Vault</a>
-    <a href="../about/index.html">About</a>
   </nav>
 </header>
 
 <main>
-<p class="kicker">All-time table</p>
-<h1>The Arcade Championship</h1>
-<p>Every game in the arcade feeds one table. Finish a game and you earn <strong>5 points</strong>. Medals earn more: bronze 10, silver 20, gold 30, and a Wren medal 50. Solving a game's daily-seed case earns 3. The table never resets — it is the long game the weekly games hang on.</p>
+<p class="kicker">Championship · This week's game</p>
+<h1>The Night Log Championship</h1>
+<p>This table belongs to this week's game — it counts The Night Log and nothing else. Finish a shift and you earn <strong>5 points</strong>. Your best medal earns its points on top: bronze 10, silver 20, gold 30, and a Wren medal 50. Next week's game gets a championship of its own.</p>
 <p class="muted">For now, this table is kept in your own browser, on this machine — your points, honestly come by. Shared tables, where everyone can see everyone, arrive when the arcade's score service opens.</p>
 
-<div id="champ-table"><p class="muted">No points yet. Finish this week's game and the first line of this table is yours.</p></div>
+<div id="champ-table"><p class="muted">No points yet. Finish The Night Log and the first line of this table is yours.</p></div>
 
-<h2>Each game's own board</h2>
-<p>Alongside the championship, every game keeps its own leaderboard — a shift score in The Night Log, and whatever each future game measures. A game's board closes when the game goes into the Vault, and the final table stays on its page for good.</p>
+<h2>The shift board</h2>
+<p>Every finished shift also lands on The Night Log's own board, on <a href="../games/the-night-log/index.html">its game page</a> — the scores themselves, shift by shift.</p>
 </main>
 
 <footer class="site">
-  <p>Wrenworks Arcade, made in London. <a href="../about/index.html">About the arcade</a>.</p>
+  <p>Wrenworks Arcade, made in London.</p>
 </footer>
 
 </div>
 <script src="../arcade-api.js"></script>
 <script>
 (function () {
-  var table = ArcadeAPI.getChampionship();
-  if (!table.length) return;
-  var html = '<table class="board"><tr><th>#</th><th>Player</th><th class="num">Points</th></tr>';
-  table.forEach(function (r, i) {
-    html += "<tr><td>" + (i + 1) + "</td><td>" + String(r.name).replace(/</g, "&lt;") +
-      '</td><td class="num">' + r.points + "</td></tr>";
-  });
-  document.getElementById("champ-table").innerHTML = html + "</table>";
+  var slug = "the-night-log";
+  var MEDAL_POINTS = { none: 0, bronze: 10, silver: 20, gold: 30, wren: 50 };
+  var g = ArcadeAPI.getPassport().games[slug];
+  if (!g || !g.plays) return;
+  var points = g.finishes * 5 + (MEDAL_POINTS[g.bestMedal] || 0);
+  var name = String(ArcadeAPI.getName() || "A player").replace(/</g, "&lt;");
+  var html = '<table class="board"><tr><th>Player</th><th class="num">Points</th>' +
+    '<th class="num">Finishes</th><th>Best medal</th><th class="num">Best score</th></tr>' +
+    "<tr><td>" + name + '</td><td class="num">' + points + '</td><td class="num">' + g.finishes +
+    "</td><td>" + ArcadeAPI.MEDAL_LABEL[g.bestMedal] + '</td><td class="num">' + g.bestScore +
+    "</td></tr></table>";
+  document.getElementById("champ-table").innerHTML = html;
 })();
 </script>
 </body>

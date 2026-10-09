@@ -180,7 +180,7 @@ function showStart() {
   var save = loadSave();
   var passport = API.getPassport();
   var g = passport.games[SLUG];
-  var best = g && g.finishes ? "<p class='muted'>Your passport: " + g.finishes + " shift" + (g.finishes > 1 ? "s" : "") +
+  var best = g && g.finishes ? "<p class='muted'>Your record: " + g.finishes + " shift" + (g.finishes > 1 ? "s" : "") +
     " finished · best medal " + API.MEDAL_LABEL[g.bestMedal] + " · best score " + g.bestScore + ".</p>" : "";
   var daily = Core.generateDailyCase(todayStr());
   root.innerHTML =
