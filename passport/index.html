@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Passport — The Wrenworks Arcade</title>
+<meta name="description" content="Your Wrenworks Arcade passport: the games you have finished, the medals you hold, and a card to share them with.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Wrenworks Arcade">
+<meta property="og:title" content="Your Passport — The Wrenworks Arcade">
+<meta property="og:description" content="Your Wrenworks Arcade passport: the games you have finished, the medals you hold, and a card to share them with.">
+<meta property="og:url" content="https://wrenly40.github.io/passport/">
+<meta property="og:image" content="https://wrenly40.github.io/games/the-night-log/assets/nightlog-case.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Your Passport — The Wrenworks Arcade">
+<meta name="twitter:description" content="Your Wrenworks Arcade passport: the games you have finished, the medals you hold, and a card to share them with.">
+<meta name="twitter:image" content="https://wrenly40.github.io/games/the-night-log/assets/nightlog-case.png">
+<link rel="stylesheet" href="../arcade.css">
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../index.html">Wrenworks <span>Arcade</span></a>
+  <nav>
+    <a href="../index.html">This week</a>
+    <a href="../championship/index.html">Championship</a>
+    <a href="index.html" class="here">Passport</a>
+    <a href="../vault/index.html">Vault</a>
+    <a href="../about/index.html">About</a>
+  </nav>
+</header>
+
+<main>
+<p class="kicker">Kept in your browser</p>
+<h1>Your passport</h1>
+<p>There are no accounts in the arcade. Your passport — games finished, medals held, daily cases solved — is kept in this browser, on this device. Clear your browser data and it goes with it; that is the trade we make for never asking you for a password. <a href="../about/index.html">The privacy note explains the rest</a>.</p>
+
+<label class="small muted" for="player-name">Name shown on leaderboards (a nickname, never your real name or email):</label>
+<p class="signup" style="margin-top:0.3rem">
+  <input type="text" id="name-input" maxlength="24" placeholder="e.g. NightOwl"
+    style="flex:1 1 16rem;padding:0.6rem 0.8rem;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-size:1rem">
+  <button class="btn ghost" id="name-save" type="button">Save name</button>
+</p>
+<p class="muted small" id="name-msg" role="status"></p>
+
+<div id="passport-body"><p class="muted">Nothing stamped yet. <a href="../play/the-night-log/index.html">Play this week's game</a> and your first stamp lands here.</p></div>
+
+<h2>Share your passport</h2>
+<p class="muted">A card with your medals, drawn from this page. Save it and post it wherever you like.</p>
+<p><button class="btn ghost" id="card-btn" type="button">Draw my passport card</button></p>
+<p><canvas id="card" width="1200" height="630" style="max-width:100%;display:none;border:1px solid var(--line);border-radius:8px"></canvas></p>
+<p id="card-actions" style="display:none">
+  <a class="btn" id="card-download" download="wrenworks-passport.png" href="#">Download the card</a>
+  <button class="btn ghost" id="card-copy" type="button">Copy as text</button>
+</p>
+</main>
+
+<footer class="site">
+  <p>Wrenworks Arcade, made in London. <a href="../about/index.html">About the arcade</a>.</p>
+</footer>
+
+</div>
+<script src="../arcade-api.js"></script>
+<script>
+(function () {
+  var GAMES = { "the-night-log": "The Night Log" };
+  var nameInput = document.getElementById("name-input");
+  nameInput.value = ArcadeAPI.getName();
+  document.getElementById("name-save").addEventListener("click", function () {
+    ArcadeAPI.setName(nameInput.value.trim());
+    document.getElementById("name-msg").textContent = "Saved. This is the name the leaderboards will show.";
+  });
+
+  var passport = ArcadeAPI.getPassport();
+  var slugs = Object.keys(passport.games);
+  if (slugs.length) {
+    var html = '<table class="board"><tr><th>Game</th><th class="num">Plays</th><th class="num">Finishes</th><th>Best medal</th><th class="num">Best score</th></tr>';
+    slugs.forEach(function (slug) {
+      var g = passport.games[slug];
+      html += "<tr><td>" + (GAMES[slug] || slug) + '</td><td class="num">' + g.plays +
+        '</td><td class="num">' + g.finishes + "</td><td>" + ArcadeAPI.MEDAL_LABEL[g.bestMedal] +
+        '</td><td class="num">' + g.bestScore + "</td></tr>";
+    });
+    html += "</table>";
+    var stamps = Object.keys(passport.dailyStamps).length;
+    html += '<p class="muted">Daily-seed cases solved: ' + stamps + ".</p>";
+    document.getElementById("passport-body").innerHTML = html;
+  }
+
+  function medalSummary() {
+    var parts = [];
+    slugs.forEach(function (slug) {
+      var g = passport.games[slug];
+      if (g.finishes > 0) parts.push((GAMES[slug] || slug) + ": " + ArcadeAPI.MEDAL_LABEL[g.bestMedal]);
+    });
+    return parts.length ? parts.join(" · ") : "No finishes yet";
+  }
+
+  document.getElementById("card-btn").addEventListener("click", function () {
+    var c = document.getElementById("card");
+    var ctx = c.getContext("2d");
+    ctx.fillStyle = "#101013"; ctx.fillRect(0, 0, 1200, 630);
+    ctx.strokeStyle = "#2fbfae"; ctx.lineWidth = 3; ctx.strokeRect(28, 28, 1144, 574);
+    ctx.fillStyle = "#ece9e2"; ctx.font = "700 54px Georgia, serif";
+    ctx.fillText("Wrenworks Arcade — Passport", 70, 130);
+    ctx.font = "32px Georgia, serif"; ctx.fillStyle = "#ece5d3";
+    ctx.fillText(ArcadeAPI.getName() || "A player", 70, 200);
+    ctx.font = "28px -apple-system, sans-serif"; ctx.fillStyle = "#a3a099";
+    wrap(ctx, medalSummary(), 70, 280, 1050, 42);
+    var pts = ArcadeAPI.getChampionship();
+    ctx.fillText("One new game every Friday · wrenly40.github.io/arcade", 70, 545);
+    c.style.display = "block";
+    document.getElementById("card-actions").style.display = "block";
+    document.getElementById("card-download").href = c.toDataURL("image/png");
+  });
+  function wrap(ctx, text, x, y, max, lh) {
+    var words = text.split(" "), line = "", yy = y;
+    words.forEach(function (w) {
+      var t = line ? line + " " + w : w;
+      if (ctx.measureText(t).width > max && line) { ctx.fillText(line, x, yy); yy += lh; line = w; }
+      else line = t;
+    });
+    ctx.fillText(line, x, yy);
+  }
+  document.getElementById("card-copy").addEventListener("click", function () {
+    var text = "My Wrenworks Arcade passport — " + medalSummary() +
+      ". One new game every Friday: wrenly40.github.io/arcade";
+    if (navigator.clipboard) navigator.clipboard.writeText(text);
+  });
+})();
+</script>
+</body>
+</html>

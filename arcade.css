@@ -1,0 +1,139 @@
+/* Wrenworks Arcade — shell styles. One visual language for the arcade:
+   near-black ink, warm paper highlights, the studio teal as the accent. */
+:root {
+  --bg: #101013;
+  --panel: #17171c;
+  --panel-2: #1d1d23;
+  --line: #2a2a33;
+  --ink: #ece9e2;
+  --muted: #a3a099;
+  --accent: #2fbfae;
+  --accent-dim: #0f766e;
+  --paper: #ece5d3;
+  --danger: #e0685f;
+  --gold: #d9a441;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.wrap { max-width: 62rem; margin: 0 auto; padding: 1.4rem 1.1rem 3.5rem; }
+
+header.site {
+  display: flex; justify-content: space-between; align-items: baseline;
+  flex-wrap: wrap; gap: 0.4rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.8rem; margin-bottom: 1.8rem;
+}
+header.site .brand { font-size: 1.25rem; font-weight: 700; color: var(--ink); text-decoration: none; }
+header.site .brand span { color: var(--accent); }
+header.site nav a { color: var(--muted); text-decoration: none; margin-left: 1rem; font-size: 0.95rem; }
+header.site nav a:hover { color: var(--accent); text-decoration: underline; }
+header.site nav a.here { color: var(--ink); }
+
+h1 { font-size: 2rem; line-height: 1.2; margin: 0.3rem 0 0.7rem; }
+h2 { font-size: 1.3rem; margin: 2.2rem 0 0.6rem; }
+h3 { font-size: 1.05rem; margin: 1.4rem 0 0.4rem; }
+p { margin: 0.55rem 0; }
+a { color: var(--accent); }
+a:hover { text-decoration: none; }
+.muted { color: var(--muted); }
+.small { font-size: 0.92rem; }
+
+.kicker {
+  text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.78rem;
+  color: var(--accent); margin: 0;
+}
+
+.card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 1.2rem 1.3rem; margin: 1.2rem 0;
+}
+.card h2, .card h3 { margin-top: 0; }
+
+.btn {
+  display: inline-block; padding: 0.6rem 1.25rem; border-radius: 7px;
+  background: var(--accent); color: #08111a; font-weight: 700; text-decoration: none;
+  border: 0; cursor: pointer; font-size: 1rem;
+}
+.btn:hover { opacity: 0.9; text-decoration: none; }
+.btn.ghost {
+  background: transparent; color: var(--accent);
+  border: 1px solid var(--accent-dim); font-weight: 600;
+}
+.btn:disabled { opacity: 0.45; cursor: default; }
+
+.game-art {
+  border-radius: 6px; border: 1px solid var(--line);
+  background: linear-gradient(150deg, #23202a 0%, #141318 60%, #0d0d10 100%);
+  padding: 1.6rem 1.3rem; margin-bottom: 1rem;
+}
+.game-art .stamp {
+  display: inline-block; border: 2px solid var(--paper); color: var(--paper);
+  padding: 0.15rem 0.6rem; letter-spacing: 0.22em; font-size: 0.8rem;
+  text-transform: uppercase; transform: rotate(-2deg); opacity: 0.9;
+}
+.game-art h3 {
+  font-family: Georgia, "Times New Roman", serif; font-size: 1.7rem;
+  margin: 0.8rem 0 0.3rem; color: var(--paper); font-weight: 600;
+}
+.game-art p { color: #c9c2ae; margin: 0; }
+
+table.board { width: 100%; border-collapse: collapse; margin: 0.6rem 0; }
+table.board th, table.board td {
+  text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--line);
+}
+table.board th { color: var(--muted); font-weight: 600; font-size: 0.88rem; text-transform: uppercase; letter-spacing: 0.06em; }
+table.board td.num, table.board th.num { text-align: right; }
+
+.signup {
+  display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 0.8rem 0 0.4rem;
+}
+.signup input[type="email"] {
+  flex: 1 1 16rem; padding: 0.6rem 0.8rem; border-radius: 7px;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--ink);
+  font-size: 1rem;
+}
+.local-note {
+  border: 1px dashed var(--gold); color: var(--gold); border-radius: 7px;
+  padding: 0.5rem 0.8rem; font-size: 0.9rem; margin: 0.8rem 0;
+}
+
+.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1rem; }
+.shelf .slot {
+  border: 1px dashed var(--line); border-radius: var(--radius);
+  padding: 1rem; color: var(--muted); min-height: 6.5rem;
+}
+
+.like-row { display: flex; align-items: center; gap: 0.7rem; margin: 1rem 0; }
+.like-btn {
+  background: var(--panel-2); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 999px; padding: 0.35rem 0.95rem; cursor: pointer; font-size: 0.95rem;
+}
+.like-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
+.shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; margin: 1rem 0; }
+.shots figure { margin: 0; }
+.shots img { width: 100%; border-radius: 8px; border: 1px solid var(--line); display: block; }
+.shots figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 0.35rem; }
+
+footer.site {
+  border-top: 1px solid var(--line); margin-top: 3rem; padding-top: 1rem;
+  color: var(--muted); font-size: 0.95rem;
+}
+
+@media (max-width: 640px) {
+  body { font-size: 16px; }
+  h1 { font-size: 1.6rem; }
+  header.site nav a { margin-left: 0.7rem; }
+  .wrap { padding: 1rem 0.9rem 3rem; }
+}

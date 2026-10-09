@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://wrenly40.github.io/sitemap.xml

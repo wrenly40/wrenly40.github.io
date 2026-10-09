@@ -3,59 +3,120 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wrenworks — games, tools and spreadsheets from a small London studio</title>
-<meta name="description" content="Wrenworks is a small studio in London making games, tools and spreadsheets. CaptionTool for offline video captions, the UK Sole Trader Tax Pack, and an HTML5 horror game starter kit.">
-<link rel="stylesheet" href="style.css">
+<title>The Wrenworks Arcade — a new game every Friday</title>
+<meta name="description" content="The Wrenworks Arcade: one new free browser game every Friday, each a different genre, playable for its week and then kept in the Vault. No downloads, no accounts.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Wrenworks Arcade">
+<meta property="og:title" content="The Wrenworks Arcade — a new game every Friday">
+<meta property="og:description" content="One new free browser game every Friday, each a different genre, playable for its week and then kept in the Vault. No downloads, no accounts.">
+<meta property="og:url" content="https://wrenly40.github.io/">
+<meta property="og:image" content="https://wrenly40.github.io/games/the-night-log/assets/nightlog-case.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Wrenworks Arcade — a new game every Friday">
+<meta name="twitter:description" content="One new free browser game every Friday, each a different genre, playable for its week and then kept in the Vault. No downloads, no accounts.">
+<meta name="twitter:image" content="https://wrenly40.github.io/games/the-night-log/assets/nightlog-case.png">
+<link rel="stylesheet" href="arcade.css">
 </head>
 <body>
 <div class="wrap">
 
 <header class="site">
-  <a class="brand" href="index.html">Wrenworks</a>
+  <a class="brand" href="index.html">Wrenworks <span>Arcade</span></a>
   <nav>
-    <a href="captiontool.html">CaptionTool</a>
-    <a href="tax-pack.html">Tax Pack</a>
-    <a href="starter-kit.html">Starter Kit</a>
+    <a href="index.html" class="here">This week</a>
+    <a href="championship/index.html">Championship</a>
+    <a href="passport/index.html">Passport</a>
+    <a href="vault/index.html">Vault</a>
+    <a href="about/index.html">About</a>
   </nav>
 </header>
 
 <main>
-<h1>Games, tools and spreadsheets, made in London.</h1>
-<p>Wrenworks is a small studio in London. We make games, small tools and spreadsheets, and we sell them direct: you pay once, you download the thing, and that is the whole arrangement. No subscriptions, no accounts, no tracking on this site.</p>
+<p class="kicker">One new game every Friday</p>
+<h1>A small arcade, one game at a time.</h1>
+<p>Every Friday a new game opens here. Each one is a different kind of game from the last, each takes about half an hour to an hour to finish, and each is free, in your browser, with no downloads and no accounts. A game is playable for its week. When the next one arrives, it moves to the Vault: its page, its scores and its medals stay, but it cannot be played again — unless players ask for it back, loudly enough, and often enough.</p>
 
-<div class="product">
-  <h2><a href="captiontool.html">CaptionTool</a></h2>
-  <p>CaptionTool makes captions for your videos on your own computer. You drop in a video or audio file and get caption files back, and your footage never leaves the machine. There is nothing to upload, no account to make, and no monthly bill. It runs on Windows, Mac and Linux, and it is the tool to reach for when the footage is private: client work, legal recordings, family video, anything you would rather not send to a stranger's server.</p>
-  <p><span class="price">£19, once.</span></p>
-  <p><a class="buy" href="https://wrenly40.gumroad.com/l/captiontool">Buy CaptionTool on Gumroad</a></p>
-  <p><a href="captiontool.html">More about CaptionTool</a></p>
-  <p>Want to caption a video without uploading it anywhere? Here is the plain guide: <a href="caption-video-without-uploading.html">How to add captions to a video without uploading it</a>.</p>
-</div>
+<section class="card" aria-labelledby="thisweek">
+  <p class="kicker">This week's game</p>
+  <div class="game-art">
+    <span class="stamp">Case file · Week 1</span>
+    <h3>The Night Log</h3>
+    <p>Paranormal deduction, in ink and paper.</p>
+  </div>
+  <h2 id="thisweek" style="margin-top:0">The Night Log</h2>
+  <p>You are the night investigator. Each case file gives you the scene, the timeline, and four witness testimonies. Three of the witnesses are people. The fourth is the thing wearing a person's shape, and its testimony contains one detail that could not be true. Read carefully, and name it.</p>
+  <p>A full shift is a dozen cases and a finale. Most players finish in half an hour to an hour.</p>
+  <p>
+    <a class="btn" href="play/the-night-log/index.html">Play The Night Log</a>
+    <a class="btn ghost" href="games/the-night-log/index.html">About this game</a>
+  </p>
+  <div class="like-row">
+    <button class="like-btn" id="like-btn" aria-pressed="false">♥ Like this game</button>
+    <span class="muted small" id="like-count"></span>
+  </div>
+</section>
 
-<div class="product">
-  <h2><a href="tax-pack.html">UK Sole Trader Tax Pack</a></h2>
-  <p>A spreadsheet that works out your sole trader tax for you. You put in what you earned and what you spent, and it works out your income tax and Class 4 National Insurance for the 2025-26 and 2026-27 tax years, with a Making Tax Digital quarterly tab for when quarterly reporting starts. It works in Excel and Google Sheets, and it shows you the number you will actually be billed for, so January holds no surprises.</p>
-  <p><span class="price">£9.99, once.</span></p>
-  <p><a class="buy" href="https://wrenly40.gumroad.com/l/lqpzxj">Buy the Tax Pack on Gumroad</a></p>
-  <p class="free-note">New to Self Assessment? Start with the free one-page checklist: <a href="https://wrenly40.gumroad.com/l/sole-trader-checklist">Sole Trader Self Assessment Checklist (free)</a>.</p>
-  <p><a href="tax-pack.html">More about the Tax Pack</a></p>
-</div>
+<section class="card" aria-labelledby="signup-h">
+  <h2 id="signup-h" style="margin-top:0">Get the next game in your inbox</h2>
+  <p>One email each Friday, when the new game opens. Nothing else, no selling your address, unsubscribe in one click. Joining takes one extra click: the list service emails you to confirm the address is yours.</p>
+  <!-- SIGNUP CONFIG: the form endpoint is the single config value for the
+       mailing list (Kit form "Wrenworks Arcade — new game alerts", ID
+       10024219). To point the arcade at a different form, change only
+       the action below. -->
+  <form class="signup" id="signup-form" action="https://app.kit.com/forms/10024219/subscriptions" method="post">
+    <input type="email" name="email_address" required placeholder="you@example.com" aria-label="Email address">
+    <button class="btn" type="submit">Tell me when it drops</button>
+  </form>
+</section>
 
-<div class="product">
-  <h2><a href="starter-kit.html">HTML5 Horror Game Starter Kit</a></h2>
-  <p>The full source code of a finished horror game, ready to make your own. It is the game we published as The Last Shift: a top-down night-shift game in a single HTML file, with the battery torch, the stalker that freezes in the light, and all three nights working end to end. Change the art, the rooms and the story, and the game underneath is already done.</p>
-  <p><span class="price">$9.99, once.</span></p>
-  <p><a class="buy" href="https://wren7762.itch.io/html5-horror-game-starter-kit">Buy the Starter Kit on itch.io</a></p>
-  <p class="free-note">Play the game it came from, free in your browser: <a href="https://wren7762.itch.io/the-last-shift">The Last Shift</a>.</p>
-  <p><a href="starter-kit.html">More about the Starter Kit</a></p>
+<h2>The Championship, so far</h2>
+<p class="muted">Finishing games earns points here, and medals earn more. <a href="championship/index.html">How points work</a>. The table below is your own record, kept in this browser.</p>
+<div id="champ-home"><p class="muted">No points yet. The first names on this table are still to be earned.</p></div>
+
+<h2>The Vault</h2>
+<p class="muted">Games that have had their week rest here — pages, scores and medals kept, doors locked. <a href="vault/index.html">Visit the Vault</a>.</p>
+<div class="shelf">
+  <div class="slot">Nothing in the Vault yet. The Night Log is the first game; when the next game arrives, this is where it will rest.</div>
 </div>
+<h3>Coming to the arcade</h3>
+<ul>
+  <li><strong>The Morning Edition</strong> — opens Friday 16 October</li>
+  <li><strong>Starfall Post</strong> — opens Friday 23 October</li>
+  <li><strong>Glasshouse</strong> — opens Friday 30 October</li>
+</ul>
 
 </main>
 
 <footer class="site">
-  <p>Wrenworks, London. Questions about any of these: the product pages above have everything, including how to reach us through Gumroad or itch.io.</p>
+  <p>Wrenworks Arcade, made in London. The games live only on this site. <a href="about/index.html">About the arcade and our quality promise</a>.</p>
 </footer>
 
 </div>
+<script src="arcade-api.js"></script>
+<script>
+(function () {
+  var slug = "the-night-log";
+  var btn = document.getElementById("like-btn");
+  var count = document.getElementById("like-count");
+  function renderLike() {
+    var s = ArcadeAPI.getLikes(slug);
+    btn.setAttribute("aria-pressed", s.liked ? "true" : "false");
+    btn.textContent = s.liked ? "♥ Liked" : "♥ Like this game";
+    count.textContent = s.likes === 1 ? "1 player likes this game" :
+      (s.likes > 1 ? s.likes + " players like this game" : "");
+  }
+  btn.addEventListener("click", function () { ArcadeAPI.like(slug); renderLike(); });
+  renderLike();
+
+  var table = ArcadeAPI.getChampionship();
+  if (table.length) {
+    var html = '<table class="board"><tr><th>Player</th><th class="num">Points</th></tr>';
+    table.slice(0, 10).forEach(function (r) {
+      html += "<tr><td>" + r.name.replace(/</g, "&lt;") + '</td><td class="num">' + r.points + "</td></tr>";
+    });
+    document.getElementById("champ-home").innerHTML = html + "</table>";
+  }
+})();
+</script>
 </body>
 </html>
