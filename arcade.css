@@ -134,3 +134,8 @@ footer.site {
   header.site nav { gap: 0.2rem 1rem; }
   .section { margin-top: 2.6rem; padding-top: 1.7rem; }
 }
+
+/* SPA views (FD-045): the shell holds every view in one document
+   and the router toggles them with the hidden attribute — make
+   sure nothing in the shell's display rules can override it. */
+[data-view][hidden], [data-footer][hidden] { display: none !important; }

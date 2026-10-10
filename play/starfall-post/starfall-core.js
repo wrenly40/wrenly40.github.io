@@ -45,7 +45,17 @@
    blended in between 12,000 and 24,000 px so the opening lane
    (chunks 0–2, generated on v1.2's parameters) is unchanged and
    a first-timer's learning minute is the same. Medals, boss
-   cadence and patterns are untouched. */
+   cadence and patterns are untouched.
+
+   v1.4 (owner's playtest of the live v1.3): the delivery capture
+   loses its activity gate. Passing through a beacon's ring is the
+   delivery, full stop — the v1.2 recentMove requirement denied
+   coasted pickups (line up early, hands off, ring dead-centre,
+   nothing counted). The gate survives only on near-miss credit.
+   Anti-camping stands on its other two legs — depth pays nothing
+   and beacons are placed off the safe centre line — re-proven by
+   the hover suite. Delivery counts change materially, so saves
+   move to v6 keys (in starfall.js). */
 (function (global) {
 "use strict";
 
@@ -345,11 +355,13 @@ function createRun() {
     integrity: 100, invulnT: 0,
     chain: 0, bestChain: 0, lastDeliveryT: -99,
     deliveries: 0, nearMisses: 0, hits: 0,
-    /* v1.2 anti-camping: recent self-driven flight, in px, decayed
-       with a ~0.9 s half-life each step and topped up by the ship's
-       actual movement. Deliveries and near-miss credit require it
-       to be at least ACTIVITY_MIN — the lane only pays a pilot who
-       is flying. */
+    /* v1.2 anti-camping bookkeeping: recent self-driven flight, in
+       px, decayed with a ~0.9 s half-life each step and topped up
+       by the ship's actual movement. Near-miss credit still
+       requires it to be at least ACTIVITY_MIN (a rock drifting
+       past a parked ship pays nothing). Deliveries required it
+       too until v1.4, which removed the gate from capture: it
+       denied coasted pickups flown exactly as intended. */
     recentMove: 0,
     raw: 0, done: false, cleared: false,
     bosses: 0, nextBoss: 0, bossWarned: -1,
@@ -486,9 +498,18 @@ function stepRun(state, input, dt) {
     }
     if (by > H + 140) continue;
     var bdx = b.x - s.x, bdy = by - s.y;
-    /* a ring only pays a pilot who is flying (v1.2): drift into it
-       parked and it passes unclaimed, like any beacon let go by */
-    if (bdx * bdx + bdy * bdy < CAPTURE_R * CAPTURE_R && state.recentMove >= ACTIVITY_MIN) {
+    /* v1.4: passing through the ring is the delivery — the v1.2
+       activity gate is gone from this check. It denied exactly the
+       pass it should reward: a pilot who lines up early and coasts
+       the last stretch arrives centred with recentMove decayed to
+       nothing, and the ring passed unclaimed (owner's live-play
+       report). Camping stays dead on the closure's other two legs:
+       depth pays nothing, and beacons sit 70–150 px off the safe
+       centre line, so a parked ship can only collect a beacon that
+       drifts onto its exact spot — in traffic that kills parked
+       ships in seconds (hover suite, verify §7, re-proven for
+       v1.4). The near-miss gate further down is unchanged. */
+    if (bdx * bdx + bdy * bdy < CAPTURE_R * CAPTURE_R) {
       b.done = "delivered";
       state.chain += 1;
       if (state.chain > state.bestChain) state.bestChain = state.chain;

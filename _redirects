@@ -1,0 +1,13 @@
+# Wrenworks Arcade — SPA route rewrites (FD-045).
+# The four routes are views of the one shell document; these rules
+# serve the shell at the game, leaderboard and vault routes (the
+# root serves it natively). Status 200 = rewrite, the address bar
+# keeps the route. Deploy tooling: like wrangler, send this file as
+# the deployment's _redirects config field — it is NOT a manifest
+# asset and must not be uploaded as one.
+/play/starfall-post /index.html 200
+/play/starfall-post/ /index.html 200
+/leaderboard /index.html 200
+/leaderboard/ /index.html 200
+/vault /index.html 200
+/vault/ /index.html 200

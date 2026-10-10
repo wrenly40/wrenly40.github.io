@@ -20,7 +20,13 @@
    softened) and the core's difficulty lift. The ramp changes
    materially from 12,000 px on, so records earned on the v1.2
    ramp are not comparable: saves move to v5 keys; v4 records do
-   not carry (passport records are the adapter's and stay). */
+   not carry (passport records are the adapter's and stay).
+
+   v1.4: the coasted-delivery fix (in the core: passing through a
+   beacon's ring is the delivery — the v1.2 activity gate no longer
+   applies to capture, only to near-miss credit). Delivery counts
+   change materially, so saves move to v6 keys; v5 records do not
+   carry (passport records are the adapter's and stay). */
 (function () {
 "use strict";
 var Core = window.StarfallCore;
@@ -219,7 +225,7 @@ var Sound = {
 document.addEventListener("pointerdown", function () { Sound.ensure(); }, { once: true });
 
 /* ---------------- save ---------------- */
-var SAVE_KEY = "starfall.save.v5";
+var SAVE_KEY = "starfall.save.v6";
 function loadSave() {
   try {
     var s = JSON.parse(localStorage.getItem(SAVE_KEY));
@@ -237,7 +243,7 @@ var save = loadSave();
  * is written the moment anything is earned, so a refresh can never
  * lose it; the snapshot additionally lets a mid-run pilot pick the
  * run itself back up. */
-var RUN_KEY = "starfall.run.v5";
+var RUN_KEY = "starfall.run.v6";
 function snapshotRun() {
   if (!run || run.done || screen !== "run") return;
   try {
@@ -939,6 +945,13 @@ window.__starfall = {
     return { screen: screen };
   },
   /* v1.3: the audio suite's read-only view of the sound engine */
-  sound: function () { return Sound.debugState(); }
+  sound: function () { return Sound.debugState(); },
+  /* FD-045 (SPA): the shell's router asks the game to pause a live
+     run when navigation is about to hide the stage. Goes through
+     the game's own pause path (togglePause, with its snapshot and
+     resume panel); a no-op unless a run is live and unpaused. */
+  pause: function () {
+    if (screen === "run" && run && !run.done && !paused) togglePause();
+  }
 };
 })();
