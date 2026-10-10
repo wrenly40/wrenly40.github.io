@@ -30,25 +30,42 @@
   }
 
   /* The leaderboard table, rendered each time the view is entered
-     (this was the leaderboard page's own script; the markup and
-     strings are unchanged). */
+     (the FD-041 championship page's rendering, restored: the shared
+     table first, this browser's own record as the fallback). The
+     adapter's getChampionship(slug) answers at once — shared rows
+     when they have landed, local rows until then — and kicks off
+     the fetch that lands the shared table; when it arrives, the
+     arcade:championship event below re-renders. If the service is
+     unreachable the event never fires and the local record stands. */
   function renderLeaderboard() {
     var slug = "starfall-post";
     var MEDAL_POINTS = { none: 0, bronze: 10, silver: 20, gold: 30, wren: 50 };
     var mount = document.getElementById("champ-table");
+    function esc(s) { return String(s).replace(/</g, "&lt;"); }
+    function tableHtml(rows) {
+      var html = '<table class="board"><tr><th>Player</th><th class="num">Points</th>' +
+        '<th>Best-run medal</th><th class="num">Best-run deliveries</th><th class="num">Best score</th></tr>';
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        html += "<tr><td>" + esc(r.name) + '</td><td class="num">' + r.points + "</td><td>" +
+          ArcadeAPI.MEDAL_LABEL[r.medal || "none"] + '</td><td class="num">' + (r.deliveries || 0) +
+          '</td><td class="num">' + (r.bestScore || 0) + "</td></tr>";
+      }
+      return html + "</table>";
+    }
+    var shared = ArcadeAPI.getChampionship(slug);
+    if (shared && shared.length) { mount.innerHTML = tableHtml(shared); return; }
     var g = ArcadeAPI.getPassport().games[slug];
     if (!g || !g.plays) {
       mount.innerHTML = '<p class="muted">No points yet. Finish a run to take the first line.</p>';
       return;
     }
     var points = (MEDAL_POINTS[g.bestRunMedal || "none"] || 0) + (g.bestRunDeliveries || 0);
-    var name = String(ArcadeAPI.getName() || "A player").replace(/</g, "&lt;");
-    mount.innerHTML = '<table class="board"><tr><th>Player</th><th class="num">Points</th>' +
-      '<th>Best-run medal</th><th class="num">Best-run deliveries</th><th class="num">Best score</th></tr>' +
-      "<tr><td>" + name + '</td><td class="num">' + points + '</td><td>' +
-      ArcadeAPI.MEDAL_LABEL[g.bestRunMedal || "none"] + '</td><td class="num">' + (g.bestRunDeliveries || 0) +
-      '</td><td class="num">' + g.bestScore +
-      "</td></tr></table>";
+    mount.innerHTML = tableHtml([{
+      name: ArcadeAPI.getName() || "A player", points: points,
+      medal: g.bestRunMedal || "none", deliveries: g.bestRunDeliveries || 0,
+      bestScore: g.bestScore
+    }]);
   }
 
   function show(path, opts) {
@@ -98,6 +115,14 @@
   window.addEventListener("popstate", function () {
     var path = alias(location.pathname) || "/";
     if (path !== current) show(path, { push: false });
+  });
+
+  /* Shared championship rows land asynchronously (the adapter
+     fetches them in the background); when they arrive, re-render
+     the leaderboard if it is the view on screen — the entry render
+     already showed whatever was available. */
+  window.addEventListener("arcade:championship", function () {
+    if (current === "/leaderboard/") renderLeaderboard();
   });
 
   /* Direct landing: render the view the URL asks for, and tidy

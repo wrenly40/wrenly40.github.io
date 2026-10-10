@@ -101,6 +101,7 @@
   }
   btn.addEventListener("click", function () { ArcadeAPI.like(slug); renderLike(); });
   renderLike();
+  window.addEventListener("arcade:likes", renderLike);
 })();
 </script>
 <script src="/router.js"></script>
