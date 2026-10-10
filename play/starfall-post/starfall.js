@@ -288,7 +288,7 @@ function togglePause() {
       '<button class="sf-btn primary" id="sf-resume">Keep flying</button>' +
       '<button class="sf-btn" id="sf-restart">Restart this run</button>' +
       '<button class="sf-btn ghost" id="sf-quit">Leave the run</button>' +
-      '<p class="sf-small dim">Leaving ends this run here — your best runs and medals stay.</p></div>';
+      '</div>';
     el("sf-resume").addEventListener("click", function () { Sound.click(); togglePause(); });
     el("sf-restart").addEventListener("click", function () { Sound.click(); startRun(); });
     el("sf-quit").addEventListener("click", function () {
