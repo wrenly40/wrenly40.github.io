@@ -13,7 +13,14 @@
    fix, no height throttle, a harder ramp, and no score for sitting
    still (all in the core). Score semantics changed (depth pays
    nothing now), so saves move to v4 keys; v3 records do not carry
-   (passport records are the adapter's and stay). */
+   (passport records are the adapter's and stay).
+
+   v1.3: the music round (in the Sound object below: the static
+   bed is replaced by a slow pad progression; the near-miss is
+   softened) and the core's difficulty lift. The ramp changes
+   materially from 12,000 px on, so records earned on the v1.2
+   ramp are not comparable: saves move to v5 keys; v4 records do
+   not carry (passport records are the adapter's and stay). */
 (function () {
 "use strict";
 var Core = window.StarfallCore;
@@ -75,7 +82,14 @@ var Sound = {
     this.tone(base * 1.335, base * 1.335, 0.16, "triangle", 0.13, 0.07);
   },
   swift: function () { this.tone(1180, 1180, 0.1, "sine", 0.09, 0.13); },
-  nearMiss: function () { this.noise(0.16, 2600, 700, 0.10); },
+  nearMiss: function () {
+    /* v1.3: softened. The denser lane earns near misses constantly,
+       and the old fixed sweep (2,600 → 700 Hz at 0.10 peak) grated
+       on repetition — lower peak, less top end, and the sweep
+       varies per trigger so repeats never land identically. */
+    var f0 = 1650 + Math.random() * 450;
+    this.noise(0.13 + Math.random() * 0.06, f0, 620 + Math.random() * 120, 0.055);
+  },
   hit: function () { this.tone(130, 38, 0.3, "sine", 0.5); this.noise(0.22, 900, 160, 0.28); },
   chainLost: function () { this.tone(392, 392, 0.12, "triangle", 0.1); this.tone(311, 311, 0.18, "triangle", 0.1, 0.1); },
   bossWarn: function () { this.tone(196, 196, 0.22, "sine", 0.22); this.tone(147, 147, 0.3, "sine", 0.22, 0.18); },
@@ -84,32 +98,116 @@ var Sound = {
     for (var i = 0; i < n.length; i++) this.tone(n[i], n[i], 0.22, "triangle", 0.13, i * 0.09);
   },
   fail: function () { this.tone(220, 110, 0.5, "triangle", 0.18); this.tone(147, 73, 0.7, "triangle", 0.14, 0.16); },
-  bed: null,
-  startBed: function () {
-    if (this.muted || !this.ensure() || this.bed) return;
-    var c = this.ctx, t = c.currentTime;
+  /* ---- the music (v1.3) ----
+     Replaces the old bed: a STATIC chord — 110 + 220 + 277.18 Hz
+     sines through a slow filter wobble, gain 0.016, unchanged from
+     the first second of a run to the last. It never developed, so
+     it never registered as music; as an unchanging hum under the
+     whole game it read as a rocket drone and wore out its welcome
+     fast (owner's playtest of v1.2). What plays now is a slow pad
+     progression — Am, Fmaj7, Cmaj7, G — one chord every 5.5 s,
+     each crossfading into the next through a shared lowpass and a
+     single master gain capped at the old bed's level (0.02). On
+     the Am and Cmaj7 a single high chord tone sounds once, very
+     quietly, part-way through. All WebAudio, no assets. The
+     lifecycle is the old bed's exactly — startBed/stopBed at the
+     same call sites, mute toggle + starfall.muted persistence,
+     and nothing sounds before a user gesture has created and
+     resumed the context — and starting twice never stacks. */
+  musicDef: [
+    { name: "Am",    freqs: [110.00, 164.81, 220.00, 261.63] },  /* A2 E3 A3 C4 */
+    { name: "Fmaj7", freqs: [87.31, 174.61, 220.00, 329.63] },   /* F2 F3 A3 E4 */
+    { name: "Cmaj7", freqs: [130.81, 164.81, 196.00, 246.94] },  /* C3 E3 G3 B3 */
+    { name: "G",     freqs: [98.00, 123.47, 146.83, 196.00] }    /* G2 B2 D3 G3 */
+  ],
+  CHORD_LEN: 5.5, MUSIC_PEAK: 0.02,
+  music: null,
+  trackVoice: function (m, osc) {
+    m.voices.push(osc);
+    var self = this;
+    osc.onended = function () {
+      if (self.music !== m) return;
+      var j = m.voices.indexOf(osc);
+      if (j >= 0) m.voices.splice(j, 1);
+    };
+  },
+  scheduleChord: function (m, idx, when) {
+    var c = this.ctx, def = this.musicDef[idx];
     var g = c.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.016, t + 3);
-    var f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 520;
-    var o1 = c.createOscillator(); o1.type = "sine"; o1.frequency.value = 220;
-    var o2 = c.createOscillator(); o2.type = "sine"; o2.frequency.value = 277.18;
-    var o3 = c.createOscillator(); o3.type = "sine"; o3.frequency.value = 110;
-    var lfo = c.createOscillator(); lfo.frequency.value = 0.05;
-    var lfoG = c.createGain(); lfoG.gain.value = 150;
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.exponentialRampToValueAtTime(1, when + 2.4);
+    g.gain.setValueAtTime(1, when + this.CHORD_LEN - 0.4);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + this.CHORD_LEN + 2.6);
+    g.connect(m.filter);
+    var weights = [0.5, 0.34, 0.3, 0.26];
+    for (var i = 0; i < def.freqs.length; i++) {
+      var o = c.createOscillator(), og = c.createGain();
+      o.type = "sine"; o.frequency.value = def.freqs[i];
+      og.gain.value = weights[i];
+      o.connect(og); og.connect(g);
+      o.start(when); o.stop(when + this.CHORD_LEN + 2.8);
+      this.trackVoice(m, o);
+    }
+    if (idx % 2 === 0) {   /* one sparse high tone, alternate chords */
+      var so = c.createOscillator(), sg = c.createGain();
+      var st = when + 2.9;
+      so.type = "sine"; so.frequency.value = def.freqs[3] * 2;
+      sg.gain.setValueAtTime(0.0001, st);
+      sg.gain.exponentialRampToValueAtTime(0.10, st + 0.4);
+      sg.gain.exponentialRampToValueAtTime(0.0001, st + 2.6);
+      so.connect(sg); sg.connect(m.filter);
+      so.start(st); so.stop(st + 2.8);
+      this.trackVoice(m, so);
+    }
+    m.idx = idx; m.changes += 1;
+  },
+  startBed: function () {
+    if (this.muted || !this.ensure() || this.music) return;
+    var c = this.ctx, t = c.currentTime;
+    var master = c.createGain();
+    master.gain.setValueAtTime(0.0001, t);
+    master.gain.exponentialRampToValueAtTime(this.MUSIC_PEAK, t + 3);
+    var f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 640;
+    var lfo = c.createOscillator(); lfo.frequency.value = 0.07;
+    var lfoG = c.createGain(); lfoG.gain.value = 120;
     lfo.connect(lfoG); lfoG.connect(f.frequency);
-    o1.connect(f); o2.connect(f); o3.connect(f); f.connect(g); g.connect(c.destination);
-    o1.start(t); o2.start(t); o3.start(t); lfo.start(t);
-    this.bed = { g: g, nodes: [o1, o2, o3, lfo] };
+    f.connect(master); master.connect(c.destination);
+    lfo.start(t);
+    var m = this.music = { gain: master, filter: f, lfo: lfo, voices: [],
+                           idx: 0, changes: 0, timer: null };
+    var self = this;
+    this.scheduleChord(m, 0, t + 0.05);
+    var advance = function () {
+      if (self.music !== m) return;
+      self.scheduleChord(m, (m.idx + 1) % self.musicDef.length, c.currentTime + 0.05);
+      m.timer = setTimeout(advance, self.CHORD_LEN * 1000);
+    };
+    m.timer = setTimeout(advance, this.CHORD_LEN * 1000);
   },
   stopBed: function () {
-    if (!this.bed || !this.ctx) { this.bed = null; return; }
-    var bed = this.bed, t = this.ctx.currentTime;
-    this.bed = null;
-    bed.g.gain.cancelScheduledValues(t);
-    bed.g.gain.setValueAtTime(Math.max(bed.g.gain.value, 0.0001), t);
-    bed.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
-    setTimeout(function () { bed.nodes.forEach(function (n) { try { n.stop(); } catch (e) {} }); }, 600);
+    if (!this.music || !this.ctx) { this.music = null; return; }
+    var m = this.music, t = this.ctx.currentTime;
+    this.music = null;
+    if (m.timer) clearTimeout(m.timer);
+    m.gain.gain.cancelScheduledValues(t);
+    m.gain.gain.setValueAtTime(Math.max(m.gain.gain.value, 0.0001), t);
+    m.gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+    var nodes = m.voices.concat([m.lfo]);
+    setTimeout(function () { nodes.forEach(function (n) { try { n.stop(); } catch (e) {} }); }, 600);
+  },
+  /* read-only state for the gate's audio suite (it reports the
+     schedule and levels; it cannot change anything) */
+  debugState: function () {
+    var m = this.music;
+    return {
+      ctx: this.ctx ? this.ctx.state : "none",
+      muted: this.muted,
+      music: m ? { name: this.musicDef[m.idx].name,
+                   freqs: this.musicDef[m.idx].freqs.slice(),
+                   changes: m.changes,
+                   gain: m.gain.gain.value,
+                   voices: m.voices.length } : null
+    };
   },
   toggleMute: function () {
     this.muted = !this.muted;
@@ -121,7 +219,7 @@ var Sound = {
 document.addEventListener("pointerdown", function () { Sound.ensure(); }, { once: true });
 
 /* ---------------- save ---------------- */
-var SAVE_KEY = "starfall.save.v4";
+var SAVE_KEY = "starfall.save.v5";
 function loadSave() {
   try {
     var s = JSON.parse(localStorage.getItem(SAVE_KEY));
@@ -139,7 +237,7 @@ var save = loadSave();
  * is written the moment anything is earned, so a refresh can never
  * lose it; the snapshot additionally lets a mid-run pilot pick the
  * run itself back up. */
-var RUN_KEY = "starfall.run.v4";
+var RUN_KEY = "starfall.run.v5";
 function snapshotRun() {
   if (!run || run.done || screen !== "run") return;
   try {
@@ -170,7 +268,6 @@ function resumeRun(snap) {
   hud.hidden = false;
   hintShownAt = performance.now();
   el("sf-hint").style.opacity = "1";
-  el("sf-hint").textContent = "Welcome back — your run was kept exactly where you left it.";
   Sound.ensure(); Sound.startBed();
   togglePause(); /* opens paused, so the pilot resumes deliberately */
 }
@@ -417,7 +514,7 @@ function showResults(st, final, medal, newBest) {
     var detail = depthM + " m · " + st.deliveries + " deliveries" +
       (st.bosses > 0 ? " · " + st.bosses + (st.bosses === 1 ? " boss" : " bosses") + " survived" : "");
     API.submitScore(SLUG, "run", { name: name, score: final, detail: detail });
-    el("sf-board-note").textContent = "On the board. It lives on this game's page.";
+    el("sf-board-note").textContent = "On the board.";
     this.disabled = true;
   });
   el("sf-again").addEventListener("click", function () { Sound.click(); startRun(); });
@@ -840,6 +937,8 @@ window.__starfall = {
       return s;
     }
     return { screen: screen };
-  }
+  },
+  /* v1.3: the audio suite's read-only view of the sound engine */
+  sound: function () { return Sound.debugState(); }
 };
 })();

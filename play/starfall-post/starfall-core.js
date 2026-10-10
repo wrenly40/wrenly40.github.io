@@ -33,7 +33,19 @@
    it to deliver), and delivery + near-miss credit require the ship
    to have actually flown in the last second or so — a parked ship
    scores nothing and, outside the corridor's passing shelter,
-   does not live long either. */
+   does not live long either.
+
+   v1.3 (owner's playtest of the live v1.2): two changes, neither to
+   the game's shape. (1) The sound: the presentation's static bed
+   chord is replaced by a slow chord progression and the near-miss
+   sweep is softened (starfall.js § sound — no core change).
+   (2) The ramp is lifted a little in the deep lane — plateau
+   scroll 275 → 295, row gap 46 → 43, sway 84 → 90, corridor
+   halfW 58 → 55, plateau at ~30,000 px instead of ~34,400 —
+   blended in between 12,000 and 24,000 px so the opening lane
+   (chunks 0–2, generated on v1.2's parameters) is unchanged and
+   a first-timer's learning minute is the same. Medals, boss
+   cadence and patterns are untouched. */
 (function (global) {
 "use strict";
 
@@ -90,20 +102,32 @@ function chunkHash(chunk) {
 /* ---------------- the ramp ----------------
    Every difficulty parameter is a function of depth (px). All rise
    together from a gentle opening to a hard plateau reached at
-   roughly 34,000 px (about two and a half minutes into a surviving
-   run) and sustained from there — the lane never gets easier
-   again, and the corridor guarantee (§ lane generation) holds at
-   every depth, so the limit on a run is always the pilot, never
-   the geometry. (v1.2: the ramp bites sooner and its plateau sits
+   roughly 30,000 px (about two minutes into a surviving run) and
+   sustained from there — the lane never gets easier again, and
+   the corridor guarantee (§ lane generation) holds at every
+   depth, so the limit on a run is always the pilot, never the
+   geometry. (v1.2: the ramp bites sooner and its plateau sits
    past v1.1's on every axis — scroll 250 → 275, row gap 52 → 46,
-   extra-rock 0.92 → 0.97, sway 72 → 84, corridor halfW 62 → 58.)
+   extra-rock 0.92 → 0.97, sway 72 → 84, corridor halfW 62 → 58.
+   v1.3 lifts the plateau a little further — scroll → 295,
+   gap → 43, sway → 90, halfW → 55 — and brings it in from
+   ~34,400 px to ~30,000, blended in between 12,000 and
+   24,000 px so the opening stays exactly v1.2's (§ rampT).)
    On top of the ramp sit the mini-bosses (§ below): the first at
    24,000 px, then one every 30,000 px. */
-function scrollAt(d) { return Math.min(275, 175 + d * 0.0029); }
-function gapAt(d)    { return Math.max(46, 108 - d * 0.0018); }
-function extraAt(d)  { return Math.min(0.97, 0.42 + d * 0.000016); }
-function driftAt(d)  { return Math.min(84, 22 + d * 0.0018); }
-function halfWAt(d)  { return Math.max(58, 80 - d * 0.00064); }
+/* The v1.3 blend: until 12,000 px the parameters are exactly
+   v1.2's (both curves are below their caps there, so the plain
+   expressions ARE the v1.2 values) — chunks 0–2 are generated
+   from parameters sampled at their starts (0 / 6,000 / 12,000),
+   so the opening lane a first-timer learns is byte-identical to
+   the live game. From 12,000 to 24,000 px the parameters blend
+   to the steeper v1.3 curve; its plateaus hold from ~30,000 px. */
+function rampT(d) { var t = (d - 12000) / 12000; return t < 0 ? 0 : t > 1 ? 1 : t; }
+function scrollAt(d) { var t = rampT(d); return Math.min(295, (175 + d * 0.0029) * (1 - t) + (175 + d * 0.004) * t); }
+function gapAt(d)    { var t = rampT(d); return Math.max(43, (108 - d * 0.0018) * (1 - t) + (108 - d * 0.002167) * t); }
+function extraAt(d)  { var t = rampT(d); return Math.min(0.97, (0.42 + d * 0.000016) * (1 - t) + (0.42 + d * 0.0000183) * t); }
+function driftAt(d)  { var t = rampT(d); return Math.min(90, (22 + d * 0.0018) * (1 - t) + (22 + d * 0.002267) * t); }
+function halfWAt(d)  { var t = rampT(d); return Math.max(55, (80 - d * 0.00064) * (1 - t) + (80 - d * 0.000833) * t); }
 function paramsAt(d) {
   return { scroll: scrollAt(d), gap: gapAt(d), extra: extraAt(d),
            drift: driftAt(d), halfW: halfWAt(d) };
