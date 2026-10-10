@@ -65,8 +65,19 @@ a:hover { text-decoration: underline; }
 .section h2 { margin-top: 0; }
 .section > p { max-width: 40rem; }
 
-/* Hero — this week's game owns the home page */
-.hero { padding-top: 3rem; }
+/* Content views share one container spacing: the top measure the
+   hero always had (3rem, 2rem on small screens — see the media query
+   below) lives on the view containers themselves, so home,
+   leaderboard and vault all start the same distance under the
+   header. The play view is a bare game stage, not a content view,
+   and keeps no inset. A heading that opens a view sits flush at
+   that measure — its global margin-top would otherwise stack a
+   second, uneven offset on top of the container's. */
+[data-view="home"], [data-view="leaderboard"], [data-view="vault"] { padding-top: 3rem; }
+[data-view] > h1:first-child { margin-top: 0; }
+
+/* Hero — this week's game owns the home page (its top spacing is
+   the shared view-container measure above) */
 .hero h1 { font-size: clamp(2.9rem, 8vw, 4.6rem); margin: 0.5rem 0 0.7rem; }
 .hero-pitch { font-size: 1.24rem; line-height: 1.5; max-width: 36rem; margin: 0.4rem 0; }
 .hero-meta { color: var(--muted); font-size: 0.98rem; margin: 0.7rem 0 0; }
@@ -130,7 +141,7 @@ footer.site {
 @media (max-width: 640px) {
   body { font-size: 16px; }
   .wrap { padding: 0 1rem 3rem; }
-  .hero { padding-top: 2rem; }
+  [data-view="home"], [data-view="leaderboard"], [data-view="vault"] { padding-top: 2rem; }
   header.site nav { gap: 0.2rem 1rem; }
   .section { margin-top: 2.6rem; padding-top: 1.7rem; }
 }
