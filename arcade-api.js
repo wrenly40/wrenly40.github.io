@@ -1,3 +1,12 @@
+/* Wrenworks Arcade — data adapter (production build, FD-041).
+ *
+ * The original local adapter is preserved below as window.LocalAPI
+ * (same localStorage keys, so existing visitor data still reads); the
+ * remote wrapper appended at the end exposes the same ArcadeAPI shape,
+ * backed by the shared score service with this local adapter as the
+ * automatic fallback. Swap adapters via the REMOTE config in the
+ * wrapper.
+ */
 /* Wrenworks Arcade — local data adapter.
  *
  * This implements the same shapes as the planned Cloudflare Worker API
@@ -157,7 +166,7 @@
      marked with a SIGNUP CONFIG comment). No address ever passes
      through this adapter or this browser's storage. */
 
-  window.ArcadeAPI = {
+  window.LocalAPI = {
     playerToken: playerToken,
     getName: getName, setName: setName,
     getBoard: getBoard, submitScore: submitScore,
@@ -166,5 +175,168 @@
     getChampionship: getChampionship,
     logEvent: logEvent, getEvents: getEvents,
     MEDAL_LABEL: MEDAL_LABEL
+  };
+})();
+
+/* ================= remote wrapper =================
+ * Same names, same shapes, same synchronous returns as the local
+ * adapter, so no call site changes. Reads answer from the local
+ * cache immediately and refresh the shared data in the background;
+ * when fresh shared data lands, a window event ("arcade:board",
+ * "arcade:likes", "arcade:championship") tells pages to re-render.
+ * Writes apply locally at once (the offline behaviour is unchanged)
+ * and mirror to the service. Any service failure — offline, timeout,
+ * bad response — leaves the local behaviour exactly as it was.
+ */
+(function () {
+  "use strict";
+  var REMOTE = {
+    url: "https://arcade-api.wrenworks.workers.dev",
+    timeoutMs: 2500,
+    enabled: true
+  };
+  var Local = window.LocalAPI;
+  var LS = window.localStorage;
+
+  function jget(key, fallback) {
+    try {
+      var v = LS.getItem(key);
+      return v === null ? fallback : JSON.parse(v);
+    } catch (e) { return fallback; }
+  }
+  function jset(key, value) {
+    try { LS.setItem(key, JSON.stringify(value)); } catch (e) { /* private mode etc. */ }
+  }
+  function fire(name, detail) {
+    try { window.dispatchEvent(new CustomEvent(name, { detail: detail })); } catch (e) { /* old browser */ }
+  }
+
+  var inflight = {};
+  function fetchJson(path, options) {
+    if (!REMOTE.enabled) return Promise.reject(new Error("remote disabled"));
+    var ctrl = ("AbortController" in window) ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, REMOTE.timeoutMs) : null;
+    var opts = Object.assign({}, options || {}, ctrl ? { signal: ctrl.signal } : {});
+    return fetch(REMOTE.url + path, opts).then(function (res) {
+      if (timer) clearTimeout(timer);
+      if (!res.ok) throw new Error("remote " + res.status);
+      return res.json();
+    }).then(function (data) {
+      if (!data || data.success !== true) throw new Error("remote error");
+      return data.result;
+    }).catch(function (e) { if (timer) clearTimeout(timer); throw e; });
+  }
+  function refreshOnce(key, path, onOk) {
+    var now = Date.now();
+    if (inflight[key] && now - inflight[key] < 1500) return;
+    inflight[key] = now;
+    fetchJson(path).then(onOk, function () { /* fallback: local data stands */ });
+  }
+
+  /* ---- boards ---- */
+  function boardCacheKey(game, board) { return "arcade.remote.board." + game + "." + board; }
+  function getBoard(game, board) {
+    refreshOnce("board." + game + "." + board,
+      "/api/board?game=" + encodeURIComponent(game) + "&board=" + encodeURIComponent(board),
+      function (rows) {
+        jset(boardCacheKey(game, board), rows);
+        fire("arcade:board", { game: game, board: board });
+      });
+    var shared = jget(boardCacheKey(game, board), null);
+    return shared !== null ? shared : Local.getBoard(game, board);
+  }
+  function submitScore(game, board, entry) {
+    var local = Local.submitScore(game, board, entry);
+    fetchJson("/api/score", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        game: game, board: board, token: Local.playerToken(),
+        name: entry.name, score: entry.score, detail: entry.detail || ""
+      })
+    }).then(function (rows) {
+      jset(boardCacheKey(game, board), rows);
+      fire("arcade:board", { game: game, board: board });
+    }, function () { /* local row stands */ });
+    return local;
+  }
+
+  /* ---- likes ---- */
+  function likesCacheKey(game) { return "arcade.remote.likes." + game; }
+  function getLikes(game) {
+    refreshOnce("likes." + game,
+      "/api/likes?game=" + encodeURIComponent(game) + "&token=" + encodeURIComponent(Local.playerToken()),
+      function (state) {
+        jset(likesCacheKey(game), state);
+        fire("arcade:likes", { game: game });
+      });
+    var shared = jget(likesCacheKey(game), null);
+    return shared !== null ? shared : Local.getLikes(game);
+  }
+  function like(game) {
+    var optimistic = Local.like(game);
+    fetchJson("/api/like", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ game: game, token: Local.playerToken() })
+    }).then(function (state) {
+      jset(likesCacheKey(game), state);
+      fire("arcade:likes", { game: game });
+    }, function () { /* optimistic local state stands */ });
+    return optimistic;
+  }
+
+  /* ---- results + championship ---- */
+  function runId() {
+    return "r-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+  }
+  function recordResult(game, result) {
+    var passport = Local.recordResult(game, result);
+    fetchJson("/api/result", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        game: game, token: Local.playerToken(), name: Local.getName() || "A player",
+        runId: runId(), finished: !!result.finished,
+        medal: result.medal || "none",
+        score: typeof result.score === "number" ? result.score : 0,
+        deliveries: typeof result.deliveries === "number" ? result.deliveries : 0,
+        dailyStamp: result.dailyStamp || null
+      })
+    }).then(function () {
+      refreshChampionship(game, true);
+    }, function () { /* local passport stands */ });
+    return passport;
+  }
+  function champCacheKey(game) { return "arcade.remote.champ." + game; }
+  function refreshChampionship(game, force) {
+    if (force) delete inflight["champ." + game];
+    refreshOnce("champ." + game,
+      "/api/championship?game=" + encodeURIComponent(game),
+      function (rows) {
+        jset(champCacheKey(game), rows);
+        fire("arcade:championship", { game: game });
+      });
+  }
+  function getChampionship(game) {
+    if (game) {
+      refreshChampionship(game, false);
+      var shared = jget(champCacheKey(game), null);
+      if (shared !== null) return shared;
+    }
+    return Local.getChampionship();
+  }
+
+  window.ArcadeAPI = {
+    playerToken: Local.playerToken,
+    getName: Local.getName, setName: Local.setName,
+    getBoard: getBoard, submitScore: submitScore,
+    getLikes: getLikes, like: like,
+    getPassport: Local.getPassport, recordResult: recordResult,
+    getChampionship: getChampionship,
+    refreshChampionship: refreshChampionship,
+    logEvent: Local.logEvent, getEvents: Local.getEvents,
+    MEDAL_LABEL: Local.MEDAL_LABEL,
+    REMOTE: REMOTE
   };
 })();
