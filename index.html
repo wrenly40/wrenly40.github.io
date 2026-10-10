@@ -10,9 +10,11 @@
 <meta property="og:title" content="The Wrenworks Arcade — a new game every Friday">
 <meta property="og:description" content="One new free browser game every Friday, each a different genre, playable for its week and then kept in the Vault. No downloads, no accounts.">
 <meta property="og:url" content="https://wrenly40.github.io/">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://wrenly40.github.io/games/starfall-post/assets/starfall-lane.png">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="The Wrenworks Arcade — a new game every Friday">
 <meta name="twitter:description" content="One new free browser game every Friday, each a different genre, playable for its week and then kept in the Vault. No downloads, no accounts.">
+<meta name="twitter:image" content="https://wrenly40.github.io/games/starfall-post/assets/starfall-lane.png">
 <link rel="stylesheet" href="arcade.css">
 </head>
 <body>
@@ -22,15 +24,26 @@
   <a class="brand" href="index.html">Wrenworks <span>Arcade</span></a>
   <nav>
     <a href="index.html" class="here">This week</a>
+    <a href="championship/index.html">Championship</a>
     <a href="vault/index.html">Vault</a>
   </nav>
 </header>
 
 <main>
 <section class="hero">
-  <p class="kicker">Wrenworks Arcade</p>
-  <h1>A new game is being finished.</h1>
-  <p class="hero-pitch">The arcade is between games while the next one is built and tested. It is a visual game — no reading, just playing.</p>
+  <p class="kicker">This week's game</p>
+  <h1>Starfall Post</h1>
+  <p class="hero-pitch">You fly the night post: a small courier skiff, one parcel, and a lane of falling rock between you and the depot.</p>
+  <p class="hero-meta">Arcade score-attack · Eight districts · Around an hour the first time</p>
+  <div class="hero-actions">
+    <a class="btn large" href="play/starfall-post/">Play Starfall Post</a>
+    <a href="games/starfall-post/">About this game</a>
+  </div>
+  <div class="like-row">
+    <button class="like-btn" id="like-btn" aria-pressed="false">♥ Like this game</button>
+    <span class="muted small" id="like-count"></span>
+  </div>
+  <img class="hero-shot" src="games/starfall-post/assets/starfall-lane.png" alt="The courier skiff flying the meteor lane toward a lit beacon">
 </section>
 
 <section class="section" aria-labelledby="signup-h">
@@ -53,5 +66,22 @@
 </footer>
 
 </div>
+<script src="arcade-api.js"></script>
+<script>
+(function () {
+  var slug = "starfall-post";
+  var btn = document.getElementById("like-btn");
+  var count = document.getElementById("like-count");
+  function renderLike() {
+    var s = ArcadeAPI.getLikes(slug);
+    btn.setAttribute("aria-pressed", s.liked ? "true" : "false");
+    btn.textContent = s.liked ? "♥ Liked" : "♥ Like this game";
+    count.textContent = s.likes === 1 ? "1 player likes this game" :
+      (s.likes > 1 ? s.likes + " players like this game" : "");
+  }
+  btn.addEventListener("click", function () { ArcadeAPI.like(slug); renderLike(); });
+  renderLike();
+})();
+</script>
 </body>
 </html>

@@ -1,0 +1,185 @@
+/* Starfall Post — the game's own art direction: a night-sky courier
+   world. Deep indigo sky, mint beacons, amber parcels. Nothing here
+   touches the shell's styles; the shell never styles the game. */
+
+.sf-stage {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 0.5rem auto 0;
+  aspect-ratio: 2 / 3;
+  background: #060a1c;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 18px 44px rgba(10, 12, 40, 0.35), 0 2px 8px rgba(10, 12, 40, 0.25);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#sf-canvas { display: block; width: 100%; height: 100%; }
+.sf-under { text-align: center; font-size: 0.88rem; margin-top: 0.8rem; }
+
+/* ---- HUD ---- */
+.sf-hud {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #eef1ff;
+}
+.sf-hud-left {
+  position: absolute; top: 0.55rem; left: 0.8rem;
+  font-weight: 700; font-size: 1.02rem; letter-spacing: 0.02em;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+.sf-chain { color: #57ffc7; font-size: 0.86rem; margin-left: 0.55rem; font-weight: 650; }
+.sf-deliv { font-size: 0.74rem; font-weight: 600; color: rgba(195, 205, 245, 0.85); letter-spacing: 0.04em; margin-top: 0.05rem; }
+.sf-hud-mid {
+  position: absolute; top: 0.62rem; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 0.45rem;
+  font-size: 0.78rem; font-weight: 650;
+}
+.sf-parcel {
+  width: 92px; height: 9px; border-radius: 99px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+}
+.sf-parcel-fill { height: 100%; background: #ffb347; border-radius: 99px; transition: width 0.18s; }
+.sf-hud-right { position: absolute; top: 0.4rem; right: 0.55rem; display: flex; gap: 0.35rem; pointer-events: auto; }
+.sf-iconbtn {
+  width: 34px; height: 34px; border-radius: 99px;
+  background: rgba(10, 14, 34, 0.55); color: #dfe6ff;
+  border: 1px solid rgba(180, 195, 255, 0.35);
+  font-size: 0.85rem; cursor: pointer; line-height: 1;
+}
+.sf-iconbtn:hover { background: rgba(30, 38, 74, 0.8); }
+.sf-progress {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 4px;
+  background: rgba(255, 255, 255, 0.10);
+}
+.sf-progress-fill { height: 100%; width: 0; background: #57ffc7; }
+.sf-hint {
+  position: absolute; left: 0; right: 0; bottom: 1rem;
+  text-align: center; font-size: 0.82rem; color: rgba(223, 230, 255, 0.85);
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.7);
+  transition: opacity 1.2s; padding: 0 1rem;
+}
+
+/* ---- overlays / panels ---- */
+.sf-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, rgba(4, 6, 18, 0.42), rgba(4, 6, 18, 0.74));
+  padding: 1rem;
+  overflow-y: auto;
+}
+.sf-panel {
+  width: 100%; max-width: 350px;
+  text-align: center; color: #eef1ff;
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  padding: 1rem 0.4rem;
+}
+.sf-panel.wide { max-width: 430px; }
+.sf-kicker {
+  text-transform: uppercase; letter-spacing: 0.22em;
+  font-size: 0.68rem; font-weight: 650; color: #8fa3ff; margin: 0 0 0.4rem;
+}
+.sf-title {
+  font-size: 3rem; line-height: 0.98; margin: 0 0 0.6rem;
+  font-weight: 800; letter-spacing: 0.015em; color: #ffffff;
+  text-shadow: 0 0 26px rgba(87, 255, 199, 0.35);
+}
+.sf-h { font-size: 1.55rem; margin: 0 0 0.5rem; color: #fff; letter-spacing: -0.01em; }
+.sf-sub { color: #c3cdf5; font-size: 0.98rem; line-height: 1.45; margin: 0.3rem 0 0.9rem; }
+.sf-small { font-size: 0.85rem; color: #c3cdf5; }
+.sf-small.dim, .dim { color: #8b96c4; }
+.sf-btn {
+  display: block; width: 100%;
+  margin: 0.45rem 0; padding: 0.68rem 1rem;
+  border-radius: 999px; cursor: pointer;
+  background: rgba(24, 31, 64, 0.9); color: #eef1ff;
+  border: 1px solid rgba(160, 175, 255, 0.4);
+  font-size: 1rem; font-weight: 650; font-family: inherit;
+}
+.sf-btn:hover { background: rgba(38, 47, 92, 0.95); }
+.sf-btn.primary { background: #ffb347; border-color: #ffb347; color: #221503; }
+.sf-btn.primary:hover { background: #ffc06a; }
+.sf-btn.ghost { background: transparent; border-color: rgba(160, 175, 255, 0.25); font-weight: 550; }
+.sf-btn:disabled { opacity: 0.45; cursor: default; }
+.sf-row2 { display: flex; gap: 0.5rem; }
+.sf-row2 .sf-btn { flex: 1; }
+.sf-mods { display: flex; gap: 0.5rem; margin-top: 0.9rem; }
+.sf-mod {
+  flex: 1; padding: 0.5rem 0.4rem; border-radius: 12px; cursor: pointer;
+  background: rgba(24, 31, 64, 0.7); color: #c3cdf5;
+  border: 1px solid rgba(160, 175, 255, 0.3);
+  font-size: 0.9rem; font-weight: 650; font-family: inherit;
+}
+.sf-mod span { display: block; font-size: 0.72rem; font-weight: 550; color: #8b96c4; margin-top: 0.1rem; }
+.sf-mod[aria-pressed="true"] { background: rgba(87, 255, 199, 0.14); border-color: #57ffc7; color: #dffcf1; }
+.sf-mod[aria-pressed="true"] span { color: #57ffc7; }
+.sf-seedrow { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
+.sf-seedrow input {
+  flex: 1; min-width: 0; padding: 0.55rem 0.8rem; border-radius: 999px;
+  border: 1px solid rgba(160, 175, 255, 0.35); background: rgba(8, 11, 26, 0.75);
+  color: #eef1ff; font-size: 0.9rem; font-family: inherit;
+}
+.sf-seedrow .sf-btn { width: auto; margin: 0; padding: 0.55rem 0.95rem; font-size: 0.9rem; }
+.sf-controls {
+  display: flex; justify-content: center; gap: 1.1rem; flex-wrap: wrap;
+  margin-top: 1rem; font-size: 0.8rem; color: #8b96c4;
+}
+.sf-smallbtn {
+  background: none; border: none; color: #8b96c4; cursor: pointer;
+  font-size: 0.82rem; margin-top: 0.7rem; font-family: inherit; text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+/* ---- district map ---- */
+.sf-districts { display: flex; flex-direction: column; gap: 0.42rem; margin: 0.7rem 0 0.4rem; }
+.sf-district {
+  display: flex; align-items: center; gap: 0.7rem; text-align: left;
+  padding: 0.55rem 0.75rem; border-radius: 12px; cursor: pointer;
+  background: rgba(24, 31, 64, 0.75); color: #eef1ff;
+  border: 1px solid rgba(160, 175, 255, 0.28); font-family: inherit;
+}
+.sf-district:hover:not(:disabled) { background: rgba(38, 47, 92, 0.9); }
+.sf-district:disabled { opacity: 0.48; cursor: default; }
+.sf-dnum {
+  width: 1.7rem; height: 1.7rem; border-radius: 99px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(87, 255, 199, 0.14); color: #57ffc7; font-weight: 700; font-size: 0.9rem;
+}
+.sf-dname { flex: 1; font-weight: 650; font-size: 0.97rem; line-height: 1.25; }
+.sf-dname small { display: block; font-weight: 500; color: #8b96c4; font-size: 0.75rem; }
+.sf-dstatus { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: #c3cdf5; }
+.sf-medal-dot {
+  display: inline-block; width: 0.72rem; height: 0.72rem; border-radius: 99px; flex: none;
+  background: #5a6482; vertical-align: -0.08em;
+}
+.sf-medal-dot.m-bronze { background: #c97b4a; }
+.sf-medal-dot.m-silver { background: #cfd6e4; }
+.sf-medal-dot.m-gold { background: #ffd257; }
+.sf-medal-dot.m-wren { background: #57ffc7; box-shadow: 0 0 8px rgba(87, 255, 199, 0.8); }
+
+/* ---- results ---- */
+.sf-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem 0.4rem;
+  margin: 0.9rem 0;
+}
+.sf-stats span { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.09em; color: #8b96c4; }
+.sf-stats strong { font-size: 1.18rem; color: #fff; }
+.sf-medal-line { font-size: 1.02rem; font-weight: 650; color: #fff; margin: 0.2rem 0; }
+.sf-boardrow { display: flex; gap: 0.5rem; margin-top: 0.9rem; }
+.sf-boardrow input {
+  flex: 1; min-width: 0; padding: 0.55rem 0.8rem; border-radius: 999px;
+  border: 1px solid rgba(160, 175, 255, 0.35); background: rgba(8, 11, 26, 0.75);
+  color: #eef1ff; font-size: 0.9rem; font-family: inherit;
+}
+.sf-boardrow .sf-btn { width: auto; margin: 0; padding: 0.55rem 0.95rem; font-size: 0.88rem; white-space: nowrap; }
+
+@media (max-width: 520px) {
+  .sf-title { font-size: 2.5rem; }
+  .sf-panel { padding: 0.6rem 0.2rem; }
+  .sf-stats { gap: 0.45rem 0.2rem; }
+}

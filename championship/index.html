@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Starfall Post Championship — The Wrenworks Arcade</title>
+<meta name="description" content="The championship for this week's game, Starfall Post: your points and medals for this game, kept in your browser for now.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Wrenworks Arcade">
+<meta property="og:title" content="Starfall Post Championship — The Wrenworks Arcade">
+<meta property="og:description" content="The championship for this week's game, Starfall Post: your points and medals for this game, kept in your browser for now.">
+<meta property="og:url" content="https://wrenly40.github.io/championship/">
+<meta property="og:image" content="https://wrenly40.github.io/games/starfall-post/assets/starfall-lane.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Starfall Post Championship — The Wrenworks Arcade">
+<meta name="twitter:description" content="The championship for this week's game, Starfall Post: your points and medals for this game, kept in your browser for now.">
+<meta name="twitter:image" content="https://wrenly40.github.io/games/starfall-post/assets/starfall-lane.png">
+<link rel="stylesheet" href="../arcade.css">
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../index.html">Wrenworks <span>Arcade</span></a>
+  <nav>
+    <a href="../index.html">This week</a>
+    <a href="index.html" class="here">Championship</a>
+    <a href="../vault/index.html">Vault</a>
+  </nav>
+</header>
+
+<main>
+<p class="kicker">Championship · This week's game</p>
+<h1>Starfall Post Championship</h1>
+<p>Counts Starfall Post and nothing else. Finish a run for <strong>5 points</strong>; your best medal adds bronze 10, silver 20, gold 30, Wren 50.</p>
+<p class="muted">Kept in your own browser for now. Shared tables arrive when the score service opens.</p>
+
+<div id="champ-table"><p class="muted">No points yet. Finish a run to take the first line.</p></div>
+</main>
+
+<footer class="site">
+  <p>Wrenworks Arcade, made in London.</p>
+</footer>
+
+</div>
+<script src="../arcade-api.js"></script>
+<script>
+(function () {
+  var slug = "starfall-post";
+  var MEDAL_POINTS = { none: 0, bronze: 10, silver: 20, gold: 30, wren: 50 };
+  var g = ArcadeAPI.getPassport().games[slug];
+  if (!g || !g.plays) return;
+  var points = g.finishes * 5 + (MEDAL_POINTS[g.bestMedal] || 0);
+  var name = String(ArcadeAPI.getName() || "A player").replace(/</g, "&lt;");
+  var html = '<table class="board"><tr><th>Player</th><th class="num">Points</th>' +
+    '<th class="num">Finishes</th><th>Best medal</th><th class="num">Best score</th></tr>' +
+    "<tr><td>" + name + '</td><td class="num">' + points + '</td><td class="num">' + g.finishes +
+    "</td><td>" + ArcadeAPI.MEDAL_LABEL[g.bestMedal] + '</td><td class="num">' + g.bestScore +
+    "</td></tr></table>";
+  document.getElementById("champ-table").innerHTML = html;
+})();
+</script>
+</body>
+</html>
