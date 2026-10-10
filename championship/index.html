@@ -32,7 +32,7 @@
 <main>
 <p class="kicker">Championship · This week's game</p>
 <h1>Starfall Post Championship</h1>
-<p>Counts Starfall Post and nothing else. Finish a run for <strong>5 points</strong>; your best medal adds bronze 10, silver 20, gold 30, Wren 50.</p>
+<p>Counts Starfall Post and nothing else. Your best run sets your points: its medal is worth bronze 10, silver 20, gold 30, Wren 50 — plus one point for every delivery on that run.</p>
 <p class="muted">Kept in your own browser for now. Shared tables arrive when the score service opens.</p>
 
 <div id="champ-table"><p class="muted">No points yet. Finish a run to take the first line.</p></div>
@@ -50,12 +50,13 @@
   var MEDAL_POINTS = { none: 0, bronze: 10, silver: 20, gold: 30, wren: 50 };
   var g = ArcadeAPI.getPassport().games[slug];
   if (!g || !g.plays) return;
-  var points = g.finishes * 5 + (MEDAL_POINTS[g.bestMedal] || 0);
+  var points = (MEDAL_POINTS[g.bestRunMedal || "none"] || 0) + (g.bestRunDeliveries || 0);
   var name = String(ArcadeAPI.getName() || "A player").replace(/</g, "&lt;");
   var html = '<table class="board"><tr><th>Player</th><th class="num">Points</th>' +
-    '<th class="num">Finishes</th><th>Best medal</th><th class="num">Best score</th></tr>' +
-    "<tr><td>" + name + '</td><td class="num">' + points + '</td><td class="num">' + g.finishes +
-    "</td><td>" + ArcadeAPI.MEDAL_LABEL[g.bestMedal] + '</td><td class="num">' + g.bestScore +
+    '<th>Best-run medal</th><th class="num">Best-run deliveries</th><th class="num">Best score</th></tr>' +
+    "<tr><td>" + name + '</td><td class="num">' + points + '</td><td>' +
+    ArcadeAPI.MEDAL_LABEL[g.bestRunMedal || "none"] + '</td><td class="num">' + (g.bestRunDeliveries || 0) +
+    '</td><td class="num">' + g.bestScore +
     "</td></tr></table>";
   document.getElementById("champ-table").innerHTML = html;
 })();

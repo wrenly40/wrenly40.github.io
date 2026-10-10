@@ -32,8 +32,8 @@
 <main>
 <p class="kicker">Arcade score-attack</p>
 <h1>Starfall Post</h1>
-<p>You fly the night post: a small courier skiff, one parcel, and a lane of falling rock between you and the depot. Reach the depot at the end of the lane and the district is cleared. Beacons light up along the way: fly through a ring and a delivery lands, a new parcel is strapped on, and your chain grows — every delivery in a row pays more than the last.</p>
-<p>The rock is the problem. Clip one and the parcel takes the hit; five solid hits and it breaks apart, and the run is over. Skim past close enough to feel it and the lane pays a near-miss bonus. There is nothing to read and nothing to memorise: it is all in the flying.</p>
+<p>You fly the night post: a small courier skiff, one parcel, and an endless lane of falling rock. There is no finish line — the lane just gets faster, denser and stranger the deeper you go. Beacons light up along the way: fly through a ring and a delivery lands, a new parcel is strapped on, and your chain grows — every delivery in a row pays more than the last.</p>
+<p>The rock is the problem. Clip one and the parcel takes the hit; five solid hits and it breaks apart, and the run is over. Skim past close enough to feel it and the lane pays a near-miss bonus. Deeper in, the lane throws bigger things at you, and surviving one pays a bonus of its own. There is nothing to read and nothing to memorise: it is all in the flying.</p>
 
 <div class="shots">
   <figure>
@@ -52,12 +52,11 @@
 
 <h2>How it plays</h2>
 <ul>
-  <li><strong>Steer</strong> with the arrow keys or WASD, a mouse drag, or a drag on touch screens. Fly high to hurry, low to slow down.</li>
-  <li><strong>The campaign:</strong> eight districts, each a longer and busier lane. One district takes three to six minutes; the full route takes around an hour the first time, and less once the lane is learned.</li>
-  <li><strong>Medals:</strong> clearing a district opens the next one. Medals — bronze, silver, gold, and the Wren medal — are earned by the score you fly on the way: deliveries, chains and near misses. The Wren asks for a fast, clean, well-chained run on top.</li>
-  <li><strong>Modifiers:</strong> No-brake locks your speed high, Storm thickens the swaying rock. Each raises your score by half again; medals are judged on the flying itself.</li>
-  <li><strong>Free lane:</strong> an endless lane from a seed you can share — the same seed is the same lane, for anyone.</li>
-  <li><strong>Today's lane:</strong> one new seeded lane every day, on its own board.</li>
+  <li><strong>Steer</strong> with the arrow keys or WASD, a mouse drag, or a drag on touch screens. The ship goes where you point it and stops when you stop — no drift, no momentum to fight. Fly high to hurry, low to slow down.</li>
+  <li><strong>The lane:</strong> one endless lane, identical for every player — the same rocks in the same order, every run. The first minute is gentle; after that it keeps getting faster and busier until, a few minutes in, it reaches full hardness and stays there. A first run usually ends within a couple of minutes; a good run lasts five or more.</li>
+  <li><strong>Mini-bosses:</strong> every so often the lane throws something bigger at you — a wall of rock with one gap, a great boulder with rocks circling it, a slalom of gates. They are survived, not fought: thread through, and the lane pays a bonus. They come back harder.</li>
+  <li><strong>Medals:</strong> your best run earns them — bronze, silver, gold, and the Wren medal — for how far you got and how much you delivered on the way. Bronze starts at 1,200 m with 4 deliveries; the Wren asks for the deep lane and a long unbroken chain.</li>
+  <li><strong>One game for everybody:</strong> the same endless lane, the same rocks, for every player. No modes, no settings to tune — the score you fly is the score you get.</li>
 </ul>
 <p id="play-slot">
   <a class="btn large" href="../../play/starfall-post/index.html">Play Starfall Post</a>
@@ -70,9 +69,6 @@
 <h2>Your best runs</h2>
 <p class="muted small">These boards are your own record, kept in your own browser.</p>
 <div id="board-run"><p class="muted">No finished runs yet. The first line of this board is still to be earned.</p></div>
-
-<h2>Today's lane</h2>
-<div id="board-daily"><p class="muted">Nobody has flown today's lane yet — in this browser, at least.</p></div>
 
 <h2>When this game goes into the Vault</h2>
 <p class="muted">While Starfall Post is the current game, this page is its home. When the next game arrives, this page stays — the boards above become final, and the play button goes. If you want it back, say so in a reply to the Friday email — we read them all.</p>
@@ -112,7 +108,6 @@
     document.getElementById(id).innerHTML = html + "</table>";
   }
   renderBoard("board-run", "run");
-  renderBoard("board-daily", "daily");
 })();
 </script>
 </body>

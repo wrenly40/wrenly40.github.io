@@ -1,6 +1,13 @@
 /* Starfall Post — presentation. Canvas rendering, input, sound,
    screens, saves. All game logic lives in starfall-core.js; this
-   file never decides what is true, it only flies and shows. */
+   file never decides what is true, it only flies and shows.
+
+   v1.1 (FD-034 + FD-035): one endless lane for everybody — the same
+   canonical lane for every player, direct controls, mini-bosses in
+   the deep lane. The district campaign, the free/daily lanes, the
+   seed box and the modifiers are gone. Saves moved to v3 keys: v1.0
+   campaign records and v1.1-district snapshots do not carry into
+   the endless game (passport records are the adapter's and stay). */
 (function () {
 "use strict";
 var Core = window.StarfallCore;
@@ -10,10 +17,6 @@ var W = Core.W, H = Core.H;
 var root = document.getElementById("game");
 
 function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
-function todayStr() {
-  var d = new Date();
-  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-}
 function fmtScore(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
 function fmtMs(ms) {
   var s = Math.round(ms / 1000);
@@ -69,6 +72,7 @@ var Sound = {
   nearMiss: function () { this.noise(0.16, 2600, 700, 0.10); },
   hit: function () { this.tone(130, 38, 0.3, "sine", 0.5); this.noise(0.22, 900, 160, 0.28); },
   chainLost: function () { this.tone(392, 392, 0.12, "triangle", 0.1); this.tone(311, 311, 0.18, "triangle", 0.1, 0.1); },
+  bossWarn: function () { this.tone(196, 196, 0.22, "sine", 0.22); this.tone(147, 147, 0.3, "sine", 0.22, 0.18); },
   clear: function () {
     var n = [523, 659, 784, 1047];
     for (var i = 0; i < n.length; i++) this.tone(n[i], n[i], 0.22, "triangle", 0.13, i * 0.09);
@@ -111,13 +115,13 @@ var Sound = {
 document.addEventListener("pointerdown", function () { Sound.ensure(); }, { once: true });
 
 /* ---------------- save ---------------- */
-var SAVE_KEY = "starfall.save.v1";
+var SAVE_KEY = "starfall.save.v3";
 function loadSave() {
   try {
     var s = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (s && s.districts) return s;
+    if (s && typeof s.bestScore === "number") return s;
   } catch (e) {}
-  return { unlocked: 1, districts: {}, campaignDone: false, campaignMs: 0, runs: 0 };
+  return { runs: 0, bestScore: 0, bestDepth: 0, bestDeliveries: 0, bestBosses: 0, bestMedal: "none" };
 }
 function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
 var save = loadSave();
@@ -129,22 +133,21 @@ var save = loadSave();
  * is written the moment anything is earned, so a refresh can never
  * lose it; the snapshot additionally lets a mid-run pilot pick the
  * run itself back up. */
-var RUN_KEY = "starfall.run.v1";
+var RUN_KEY = "starfall.run.v3";
 function snapshotRun() {
   if (!run || run.done || screen !== "run") return;
   try {
     localStorage.setItem(RUN_KEY, JSON.stringify({
       cfg: runCfg, state: run, wallElapsed: Date.now() - runWallStart, savedAt: Date.now()
     }));
-  } catch (e) { /* storage full/blocked: the campaign save still holds */ }
+  } catch (e) { /* storage full/blocked: the best-run save still holds */ }
 }
 function clearRunSnapshot() { try { localStorage.removeItem(RUN_KEY); } catch (e) {} }
 function readRunSnapshot() {
   try {
     var s = JSON.parse(localStorage.getItem(RUN_KEY));
-    if (!s || !s.state || !s.cfg || !s.cfg.kind) return null;
-    if (s.cfg.kind === "daily" && s.cfg.seed !== "daily-" + todayStr()) { clearRunSnapshot(); return null; }
-    if (s.state.done || s.state.cleared) { clearRunSnapshot(); return null; }
+    if (!s || !s.state || !s.cfg || s.cfg.kind !== "endless") return null;
+    if (s.state.done) { clearRunSnapshot(); return null; }
     return s;
   } catch (e) { return null; }
 }
@@ -176,11 +179,11 @@ root.innerHTML =
       '<div class="sf-hud-right"><button class="sf-iconbtn" id="sf-sound" aria-label="Toggle sound">♪</button>' +
       '<button class="sf-iconbtn" id="sf-pause" aria-label="Pause">❚❚</button></div>' +
       '<div class="sf-progress"><div class="sf-progress-fill" id="sf-progress-fill"></div></div>' +
-      '<div class="sf-hint" id="sf-hint">Steer with a mouse or touch drag, or ← → ↑ ↓. Fly through the lit rings to deliver — the arrow at the top points to the next ring, and the bar along the bottom is your route.</div>' +
+      '<div class="sf-hint" id="sf-hint">Steer with a mouse or touch drag, or ← → ↑ ↓. Fly through the lit rings to deliver — the arrow at the top points to the next ring. The lane ends when the parcel does.</div>' +
     '</div>' +
     '<div class="sf-overlay" id="sf-overlay"></div>' +
   '</div>' +
-  '<p class="sf-under muted">Your route, medals and scores are kept in this browser.</p>';
+  '<p class="sf-under muted">Your best runs, medals and scores are kept in this browser.</p>';
 
 var canvas = document.getElementById("sf-canvas");
 var ctx = canvas.getContext("2d");
@@ -240,27 +243,19 @@ function currentInput() {
 }
 
 /* ---------------- run management ---------------- */
-var screen = "start";           /* start | map | run | results | campaignEnd */
+var screen = "start";           /* start | run | results */
 var run = null;                 /* core state */
-var runCfg = null;              /* {kind, district, mods, seed} */
+var runCfg = null;              /* {kind: "endless"} */
 var runWallStart = 0;
 var runFinalized = false;
 var endTimer = 0;
-var modsSel = (save.mods) ? { noBrake: !!save.mods.noBrake, storm: !!save.mods.storm }
-                          : { noBrake: false, storm: false };
 var paused = false;
 var hintShownAt = 0;
 
-function endlessLane(seed) {
-  return { seed: seed, endless: true, length: Infinity, scroll: 170, wind: Core.ENDLESS.wind };
-}
-function startRun(cfg) {
+function startRun() {
   clearRunSnapshot(); /* a fresh run supersedes any kept one */
-  runCfg = cfg;
-  var lane = cfg.kind === "district"
-    ? Core.generateLane("campaign-" + (cfg.district + 1), cfg.district)
-    : endlessLane(cfg.seed);
-  run = Core.createRun(lane, cfg.mods);
+  runCfg = { kind: "endless" };
+  run = Core.createRun();
   runWallStart = Date.now();
   runFinalized = false;
   paused = false;
@@ -272,14 +267,9 @@ function startRun(cfg) {
   hud.hidden = false;
   hintShownAt = performance.now();
   el("sf-hint").style.opacity = "1";
-  el("sf-hint").textContent = cfg.kind === "district"
-    ? "Steer with a mouse or touch drag, or ← → ↑ ↓. Fly through the lit rings to deliver — the arrow at the top points to the next ring, and the bar along the bottom is your route."
-    : "Steer with a mouse or touch drag, or ← → ↑ ↓. The arrow at the top points to the next ring. Pause (❚❚) and choose Finish when you're done.";
+  el("sf-hint").textContent = "Steer with a mouse or touch drag, or ← → ↑ ↓. Fly through the lit rings to deliver — the arrow at the top points to the next ring. The lane ends when the parcel does.";
   save.runs += 1; writeSave();
-  API.logEvent("game_start", SLUG, {
-    mode: cfg.kind, district: cfg.kind === "district" ? cfg.district + 1 : 0,
-    noBrake: !!cfg.mods.noBrake, storm: !!cfg.mods.storm, seed: cfg.seed || lane.seed
-  });
+  API.logEvent("game_start", SLUG, { mode: "endless", seed: Core.SEED });
   Sound.startBed();
 }
 function togglePause() {
@@ -288,34 +278,20 @@ function togglePause() {
   if (paused) {
     snapshotRun();
     overlay.style.display = "flex";
-    var finishBtn = runCfg.kind !== "district"
-      ? '<button class="sf-btn primary" id="sf-finish">Finish this run</button>' : "";
     overlay.innerHTML =
       '<div class="sf-panel"><h2 class="sf-h">Paused</h2>' +
-      finishBtn +
-      '<button class="sf-btn' + (finishBtn ? "" : " primary") + '" id="sf-resume">Keep flying</button>' +
+      '<button class="sf-btn primary" id="sf-resume">Keep flying</button>' +
       '<button class="sf-btn" id="sf-restart">Restart this run</button>' +
       '<button class="sf-btn ghost" id="sf-quit">Leave the run</button>' +
-      '<p class="sf-small dim">' + (runCfg.kind === "district"
-        ? "Leaving is safe: your campaign progress, medals and unlocks stay — only this run ends."
-        : "Leaving ends the run without recording its score.") + '</p></div>';
-    var fb = el("sf-finish");
-    if (fb) fb.addEventListener("click", function () {
-      Sound.click();
-      paused = false;
-      overlay.innerHTML = "";
-      overlay.style.display = "none";
-      run.done = true;              /* endless runs end when the pilot calls it */
-      setTimeout(finalizeRun, 250);
-    });
+      '<p class="sf-small dim">Leaving ends this run here — your best runs and medals stay.</p></div>';
     el("sf-resume").addEventListener("click", function () { Sound.click(); togglePause(); });
-    el("sf-restart").addEventListener("click", function () { Sound.click(); startRun(runCfg); });
+    el("sf-restart").addEventListener("click", function () { Sound.click(); startRun(); });
     el("sf-quit").addEventListener("click", function () {
       Sound.click();
-      API.logEvent("run_quit", SLUG, { mode: runCfg.kind, district: runCfg.district + 1, depth: Math.round(run.depth) });
+      API.logEvent("run_quit", SLUG, { mode: "endless", depth: Math.round(run.depth) });
       clearRunSnapshot();
       run = null; paused = false; hud.hidden = true;
-      if (runCfg.kind === "district") showMap(); else showStart();
+      showStart();
     });
   } else {
     overlay.innerHTML = "";
@@ -337,272 +313,105 @@ function finalizeRun() {
   if (runFinalized || !run) return;
   runFinalized = true;
   clearRunSnapshot();
-  var st = run, cfg = runCfg;
+  var st = run;
   var final = Core.finalScore(st);
   var wallMs = Date.now() - runWallStart;
-  var medal = "none", firstClear = false;
-  API.logEvent("run_end", SLUG, {
-    mode: cfg.kind, district: cfg.kind === "district" ? cfg.district + 1 : 0,
-    ms: wallMs, score: final, cleared: st.cleared,
-    deliveries: st.deliveries, chain: st.bestChain, hits: st.hits
-  });
-  if (cfg.kind === "district") {
-    if (st.cleared) {
-      medal = Core.medalFor(cfg.district, st.raw, st.integrity, st.bestChain, st.deliveries);
-      var rec = save.districts[cfg.district] || { best: 0, medal: "none", clears: 0, firstMs: 0 };
-      firstClear = rec.clears === 0;
-      rec.clears += 1;
-      if (final > rec.best) rec.best = final;
-      if (MEDAL_ORDER.indexOf(medal) > MEDAL_ORDER.indexOf(rec.medal)) rec.medal = medal;
-      if (firstClear) rec.firstMs = Math.round(st.time * 1000);
-      save.districts[cfg.district] = rec;
-      if (firstClear) {
-        if (cfg.district + 2 > save.unlocked && save.unlocked < 8) save.unlocked = cfg.district + 2;
-        if (cfg.district === 7 && !save.campaignDone) {
-          save.campaignDone = true;
-          save.campaignMs = Object.keys(save.districts).reduce(function (sum, k) {
-            return sum + (save.districts[k].firstMs || 0);
-          }, 0);
-          API.logEvent("campaign_end", SLUG, { ms: save.campaignMs });
-        }
-      }
-      API.recordResult(SLUG, { finished: true, medal: medal, score: final });
-    } else {
-      API.recordResult(SLUG, { finished: false, score: final });
-    }
-  } else if (cfg.kind === "daily") {
-    API.recordResult(SLUG, { finished: false, score: final, dailyStamp: todayStr() });
-  } else {
-    API.recordResult(SLUG, { finished: false, score: final });
+  var medal = Core.medalForRun(st.depth, st.deliveries, st.bestChain);
+  var newBest = final > save.bestScore;
+  if (newBest) {
+    save.bestScore = final;
+    save.bestDepth = Math.round(st.depth);
+    save.bestDeliveries = st.deliveries;
+    save.bestBosses = st.bosses;
   }
+  if (MEDAL_ORDER.indexOf(medal) > MEDAL_ORDER.indexOf(save.bestMedal)) save.bestMedal = medal;
+  API.logEvent("run_end", SLUG, {
+    mode: "endless", ms: wallMs, score: final, depth: Math.round(st.depth),
+    deliveries: st.deliveries, chain: st.bestChain, hits: st.hits,
+    bosses: st.bosses, medal: medal
+  });
+  API.recordResult(SLUG, { finished: true, medal: medal, score: final, deliveries: st.deliveries });
   writeSave();
-  showResults(st, cfg, final, medal, firstClear);
+  showResults(st, final, medal, newBest);
 }
 
 /* ---------------- overlays / screens ---------------- */
 function medalDot(m) {
   return '<span class="sf-medal-dot m-' + m + '" title="' + esc(API.MEDAL_LABEL[m]) + '"></span>';
 }
-function modsRowHTML() {
-  return '<div class="sf-mods">' +
-    '<button class="sf-mod" id="sf-mod-nobrake" aria-pressed="' + modsSel.noBrake + '">No-brake <span>score ×1.5</span></button>' +
-    '<button class="sf-mod" id="sf-mod-storm" aria-pressed="' + modsSel.storm + '">Storm <span>score ×1.5</span></button>' +
-  '</div><p class="sf-small dim">Modifiers raise the score. Medals are judged on the flying itself.</p>';
-}
-function wireMods() {
-  el("sf-mod-nobrake").addEventListener("click", function () {
-    modsSel.noBrake = !modsSel.noBrake; Sound.click();
-    this.setAttribute("aria-pressed", modsSel.noBrake);
-    save.mods = { noBrake: modsSel.noBrake, storm: modsSel.storm }; writeSave();
-  });
-  el("sf-mod-storm").addEventListener("click", function () {
-    modsSel.storm = !modsSel.storm; Sound.click();
-    this.setAttribute("aria-pressed", modsSel.storm);
-    save.mods = { noBrake: modsSel.noBrake, storm: modsSel.storm }; writeSave();
-  });
-}
 function showStart() {
   screen = "start";
   hud.hidden = true;
   overlay.style.display = "flex";
-  var p = API.getPassport().games[SLUG];
-  var cleared = Object.keys(save.districts).filter(function (k) { return save.districts[k].clears > 0; }).length;
   var record = "";
-  if (p && p.plays) {
-    record = '<p class="sf-small">Your record: ' + cleared + ' of 8 districts cleared · best medal ' +
-      esc(API.MEDAL_LABEL[p.bestMedal]) + ' · best score ' + fmtScore(p.bestScore) + '.</p>';
+  if (save.bestScore > 0) {
+    record = '<p class="sf-small">Your best run: ' + fmtScore(save.bestScore) + ' · ' +
+      fmtScore(Math.round(save.bestDepth / 10)) + ' m · ' + save.bestDeliveries + ' deliveries · ' +
+      esc(API.MEDAL_LABEL[save.bestMedal]) + '.</p>';
   }
   var snap = readRunSnapshot();
   var resumeBtn = "";
   if (snap) {
-    var where = snap.cfg.kind === "district"
-      ? "District " + (snap.cfg.district + 1) + " · " + Core.DISTRICTS[snap.cfg.district].name
-      : (snap.cfg.kind === "daily" ? "Today's lane" : "Free lane");
-    var pct = snap.cfg.kind === "district"
-      ? " · " + Math.max(1, Math.round(snap.state.depth / Core.DISTRICTS[snap.cfg.district].length * 100)) + "% flown" : "";
-    resumeBtn = '<button class="sf-btn primary" id="sf-resume-run">Pick up your run — ' + esc(where) + pct + ' · parcel ' + Math.round(snap.state.integrity) + '%</button>' +
-      '<p class="sf-small dim">A refresh never costs you a run — and your campaign progress is kept either way.</p>';
+    resumeBtn = '<button class="sf-btn primary" id="sf-resume-run">Pick up your run — ' +
+      fmtScore(Math.round(snap.state.depth / 10)) + ' m in · parcel ' + Math.round(snap.state.integrity) + '%</button>';
   }
   overlay.innerHTML =
     '<div class="sf-panel">' +
     '<p class="sf-kicker">Wrenworks Arcade</p>' +
     '<h1 class="sf-title">STARFALL<br>POST</h1>' +
-    '<p class="sf-sub">Night courier of the meteor lane. Chain your deliveries, keep the parcel whole.</p>' +
+    '<p class="sf-sub">One endless lane, the same for everyone. Chain your deliveries, keep the parcel whole — how far can you get?</p>' +
     record +
     resumeBtn +
-    '<button class="sf-btn' + (resumeBtn ? "" : " primary") + '" id="sf-go-campaign">Fly the campaign</button>' +
-    '<div class="sf-row2">' +
-      '<button class="sf-btn" id="sf-go-free">Free lane</button>' +
-      '<button class="sf-btn" id="sf-go-daily">Today\'s lane</button>' +
-    '</div>' +
-    modsRowHTML() +
-    '<div class="sf-seedrow"><input type="text" id="sf-seed" placeholder="Lane seed from a friend" aria-label="Lane seed">' +
-    '<button class="sf-btn ghost" id="sf-go-seed">Fly this seed</button></div>' +
+    '<button class="sf-btn' + (resumeBtn ? "" : " primary") + '" id="sf-go-fly">Fly the lane</button>' +
     '<div class="sf-controls"><span>mouse drag</span><span>touch drag</span><span>← → ↑ ↓ or WASD</span></div>' +
     '<button class="sf-smallbtn" id="sf-sound2">Sound: ' + (Sound.muted ? "off" : "on") + '</button>' +
     '</div>';
   if (snap) el("sf-resume-run").addEventListener("click", function () { Sound.click(); resumeRun(snap); });
-  el("sf-go-campaign").addEventListener("click", function () { Sound.click(); showMap(); });
-  el("sf-go-free").addEventListener("click", function () {
-    Sound.click();
-    var seed = "free-" + Math.random().toString(36).slice(2, 8);
-    startRun({ kind: "free", district: -1, mods: { noBrake: modsSel.noBrake, storm: modsSel.storm }, seed: seed });
-  });
-  el("sf-go-daily").addEventListener("click", function () {
-    Sound.click();
-    startRun({ kind: "daily", district: -1, mods: { noBrake: modsSel.noBrake, storm: modsSel.storm }, seed: "daily-" + todayStr() });
-  });
-  el("sf-go-seed").addEventListener("click", function () {
-    var v = el("sf-seed").value.trim();
-    if (!v) return;
-    Sound.click();
-    startRun({ kind: "free", district: -1, mods: { noBrake: modsSel.noBrake, storm: modsSel.storm }, seed: "seed-" + v });
-  });
+  el("sf-go-fly").addEventListener("click", function () { Sound.click(); startRun(); });
   el("sf-sound2").addEventListener("click", function () {
     var m = Sound.toggleMute(); refreshSoundBtn(m);
     this.textContent = "Sound: " + (m ? "off" : "on");
   });
-  wireMods();
 }
-function showMap() {
-  screen = "map";
-  hud.hidden = true;
-  overlay.style.display = "flex";
-  var cleared = 0;
-  var rows = Core.DISTRICTS.map(function (d, i) {
-    var rec = save.districts[i];
-    var locked = i + 1 > save.unlocked;
-    if (rec && rec.clears > 0) cleared++;
-    var status;
-    if (locked) status = '<span class="dim">Locked</span>';
-    else if (rec && rec.clears > 0) status = medalDot(rec.medal) + '<span>' + esc(API.MEDAL_LABEL[rec.medal]) + ' · best ' + fmtScore(rec.best) + '</span>';
-    else status = '<span class="dim">Not flown yet</span>';
-    return '<button class="sf-district" data-d="' + i + '"' + (locked ? " disabled" : "") + '>' +
-      '<span class="sf-dnum">' + (i + 1) + '</span>' +
-      '<span class="sf-dname">' + esc(d.name) + '<small>District ' + (i + 1) + ' · about ' +
-      Math.round(d.length / d.scroll / 60 * 2) / 2 + ' min</small></span>' +
-      '<span class="sf-dstatus">' + status + '</span></button>';
-  }).join("");
-  overlay.innerHTML =
-    '<div class="sf-panel wide">' +
-    '<p class="sf-kicker">The campaign</p>' +
-    '<h2 class="sf-h">Eight districts to the depot</h2>' +
-    '<p class="sf-small">' + cleared + ' of 8 cleared. Reach the depot to clear a district and open the next — the rings on the way are where the score is. Medals are earned by that score — deliveries, chains and near misses — not by clearing alone.</p>' +
-    '<div class="sf-districts">' + rows + '</div>' +
-    modsRowHTML() +
-    (save.campaignDone
-      ? '<button class="sf-btn primary" id="sf-map-ending">The last delivery</button>'
-      : '') +
-    '<button class="sf-btn ghost" id="sf-back">Back</button>' +
-    '</div>';
-  overlay.querySelectorAll(".sf-district").forEach(function (b) {
-    b.addEventListener("click", function () {
-      Sound.click();
-      startRun({ kind: "district", district: +b.getAttribute("data-d"),
-                 mods: { noBrake: modsSel.noBrake, storm: modsSel.storm } });
-    });
-  });
-  el("sf-back").addEventListener("click", function () { Sound.click(); showStart(); });
-  var mb = el("sf-map-ending");
-  if (mb) mb.addEventListener("click", function () { Sound.click(); showCampaignEnd(); });
-  wireMods();
-}
-function showResults(st, cfg, final, medal, firstClear) {
+function showResults(st, final, medal, newBest) {
   screen = "results";
   hud.hidden = true;
   overlay.style.display = "flex";
-  var d = cfg.kind === "district" ? Core.DISTRICTS[cfg.district] : null;
-  var title, sub;
-  if (cfg.kind === "district") {
-    title = st.cleared ? "Delivered." : "The parcel broke apart.";
-    sub = "District " + (cfg.district + 1) + " · " + d.name +
-      (st.cleared ? (firstClear ? " — cleared for the first time." : " — cleared again.") : " — the depot was " +
-      Math.max(0, Math.round((d.length - st.depth) / 10)) + " m away.");
-  } else if (cfg.kind === "daily") {
-    title = "That's today's lane flown.";
-    sub = "You covered " + fmtScore(Math.round(st.depth / 10)) + " m before the parcel gave out.";
-    if (st.integrity > 0) sub = "You called it a day after " + fmtScore(Math.round(st.depth / 10)) + " m.";
-  } else {
-    title = "Run over.";
-    sub = "Free lane · seed " + esc(cfg.seed) + " · " + fmtScore(Math.round(st.depth / 10)) + " m covered.";
-  }
-  var medalRow = "";
-  if (cfg.kind === "district" && st.cleared) {
-    medalRow = '<p class="sf-medal-line">' + medalDot(medal) + ' ' + esc(API.MEDAL_LABEL[medal]) + '</p>';
-  }
-  var nextBtn = "";
-  if (cfg.kind === "district" && st.cleared && cfg.district < 7) {
-    nextBtn = '<button class="sf-btn primary" id="sf-next">Next district</button>';
-  }
-  var campaignBtn = "";
-  if (cfg.kind === "district" && st.cleared && cfg.district === 7 && save.campaignDone && firstClear) {
-    campaignBtn = '<button class="sf-btn primary" id="sf-ending">The last delivery</button>';
-  }
+  var depthM = fmtScore(Math.round(st.depth / 10));
+  var medalRow = medal !== "none"
+    ? '<p class="sf-medal-line">' + medalDot(medal) + ' ' + esc(API.MEDAL_LABEL[medal]) + (newBest ? ' · a new best run' : '') + '</p>'
+    : '<p class="sf-small dim">Medals start at 1,200 m with 4 deliveries — Bronze. Silver wants 2,600 m and 9.</p>';
   overlay.innerHTML =
     '<div class="sf-panel">' +
-    '<h2 class="sf-h">' + title + '</h2>' +
-    '<p class="sf-sub">' + sub + '</p>' + medalRow +
+    '<h2 class="sf-h">The parcel broke apart.</h2>' +
+    '<p class="sf-sub">You reached ' + depthM + ' m.</p>' + medalRow +
     '<div class="sf-stats">' +
       '<div><span>Score</span><strong>' + fmtScore(final) + '</strong></div>' +
-      '<div><span>Deliveries</span><strong>' + st.deliveries + (d ? " / " + d.beacons : "") + '</strong></div>' +
+      '<div><span>Depth</span><strong>' + depthM + ' m</strong></div>' +
+      '<div><span>Deliveries</span><strong>' + st.deliveries + '</strong></div>' +
       '<div><span>Best chain</span><strong>' + st.bestChain + '</strong></div>' +
       '<div><span>Near misses</span><strong>' + st.nearMisses + '</strong></div>' +
-      '<div><span>Parcel</span><strong>' + st.integrity + '%</strong></div>' +
       '<div><span>Time</span><strong>' + fmtMs(st.time * 1000) + '</strong></div>' +
     '</div>' +
     '<div class="sf-boardrow"><input type="text" id="sf-name" maxlength="24" placeholder="Nickname for the board" value="' +
       esc(API.getName()) + '" aria-label="Nickname for the board">' +
     '<button class="sf-btn" id="sf-board">Put this run on the board</button></div>' +
     '<p class="sf-small dim" id="sf-board-note"></p>' +
-    campaignBtn + nextBtn +
     '<div class="sf-row2">' +
-      '<button class="sf-btn' + (nextBtn || campaignBtn ? "" : " primary") + '" id="sf-again">Fly it again</button>' +
-      '<button class="sf-btn ghost" id="sf-tomap">' + (cfg.kind === "district" ? "District map" : "Back") + '</button>' +
+      '<button class="sf-btn primary" id="sf-again">Fly again</button>' +
+      '<button class="sf-btn ghost" id="sf-tostart">Back to the start</button>' +
     '</div></div>';
   el("sf-board").addEventListener("click", function () {
     var name = el("sf-name").value.trim() || "A player";
     API.setName(name);
-    var board = cfg.kind === "daily" ? "daily" : "run";
-    var detail = cfg.kind === "district"
-      ? "District " + (cfg.district + 1) + " · " + d.name + (cfg.mods.storm ? " · Storm" : "") + (cfg.mods.noBrake ? " · No-brake" : "")
-      : (cfg.kind === "daily" ? "Today's lane" : "Free lane · " + cfg.seed);
-    API.submitScore(SLUG, board, { name: name, score: final, detail: detail });
+    var detail = depthM + " m · " + st.deliveries + " deliveries" +
+      (st.bosses > 0 ? " · " + st.bosses + (st.bosses === 1 ? " boss" : " bosses") + " survived" : "");
+    API.submitScore(SLUG, "run", { name: name, score: final, detail: detail });
     el("sf-board-note").textContent = "On the board. It lives on this game's page.";
     this.disabled = true;
   });
-  el("sf-again").addEventListener("click", function () { Sound.click(); startRun(cfg); });
-  el("sf-tomap").addEventListener("click", function () {
-    Sound.click();
-    if (cfg.kind === "district") showMap(); else showStart();
-  });
-  var nb = el("sf-next");
-  if (nb) nb.addEventListener("click", function () {
-    Sound.click();
-    startRun({ kind: "district", district: cfg.district + 1, mods: cfg.mods });
-  });
-  var eb = el("sf-ending");
-  if (eb) eb.addEventListener("click", function () { Sound.click(); showCampaignEnd(); });
-}
-function showCampaignEnd() {
-  screen = "campaignEnd";
-  overlay.style.display = "flex";
-  var medals = { wren: 0, gold: 0, silver: 0, bronze: 0, none: 0 };
-  Object.keys(save.districts).forEach(function (k) { medals[save.districts[k].medal]++; });
-  overlay.innerHTML =
-    '<div class="sf-panel">' +
-    '<p class="sf-kicker">Starfall Post</p>' +
-    '<h2 class="sf-h">The route is flown.</h2>' +
-    '<p class="sf-sub">Eight districts, one skiff, and the depot lit at the end of the lane. ' +
-    'Your first clear of the whole route took ' + fmtMs(save.campaignMs) + ' in the air.</p>' +
-    '<p class="sf-medal-line">' + medalDot("wren") + ' Wren ' + medals.wren + ' &nbsp; ' + medalDot("gold") + ' Gold ' + medals.gold +
-    ' &nbsp; ' + medalDot("silver") + ' Silver ' + medals.silver + ' &nbsp; ' + medalDot("bronze") + ' Bronze ' + medals.bronze + '</p>' +
-    '<p class="sf-small">The lane stays open: chase the medals you missed, fly the storm, ' +
-    'or take today\'s lane against your own board.</p>' +
-    '<button class="sf-btn primary" id="sf-end-map">District map</button>' +
-    '<button class="sf-btn ghost" id="sf-end-start">Back to the start</button>' +
-    '</div>';
-  el("sf-end-map").addEventListener("click", function () { Sound.click(); showMap(); });
-  el("sf-end-start").addEventListener("click", function () { Sound.click(); showStart(); });
+  el("sf-again").addEventListener("click", function () { Sound.click(); startRun(); });
+  el("sf-tostart").addEventListener("click", function () { Sound.click(); showStart(); });
 }
 
 /* ---------------- effects ---------------- */
@@ -639,6 +448,12 @@ function handleEvents(evs) {
       floater(run.ship.x, run.ship.y - 40, "Parcel hit — " + e.integrity + "%", "#ffb59d");
     } else if (e.type === "chainLost") {
       Sound.chainLost();
+    } else if (e.type === "bossAhead") {
+      Sound.bossWarn();
+      floater(240, 150, "⚠ " + e.name + " ahead", "#ffb59d");
+    } else if (e.type === "bossClear") {
+      Sound.clear();
+      floater(run.ship.x, run.ship.y - 46, e.name + " survived · +" + e.gained, "#a7ffd9");
     } else if (e.type === "cleared") {
       Sound.clear();
     } else if (e.type === "failed") {
@@ -793,25 +608,6 @@ function drawBeacon(x, y, time, isNext, delivered) {
   ctx.beginPath(); ctx.moveTo(0, -s * 0.8); ctx.lineTo(0, s * 0.8); ctx.moveTo(-s, 0); ctx.lineTo(s, 0); ctx.stroke();
   ctx.restore();
 }
-function drawDepot(y, time, name) {
-  ctx.save();
-  ctx.translate(0, y);
-  ctx.strokeStyle = "rgba(87,255,199,0.9)";
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(W / 2, 0, 74, 0, 6.2832); ctx.stroke();
-  ctx.strokeStyle = "rgba(87,255,199,0.35)";
-  ctx.beginPath(); ctx.arc(W / 2, 0, 88, 0, 6.2832); ctx.stroke();
-  ctx.fillStyle = "#232c52";
-  ctx.fillRect(28, 66, 60, 130); ctx.fillRect(W - 88, 66, 60, 130);
-  ctx.fillStyle = (Math.sin(time * 4) > 0) ? "#ffd257" : "#8a6d1f";
-  ctx.beginPath(); ctx.arc(58, 86, 5, 0, 6.2832); ctx.fill();
-  ctx.beginPath(); ctx.arc(W - 58, 86, 5, 0, 6.2832); ctx.fill();
-  ctx.fillStyle = "#cfe0ff";
-  ctx.font = "600 11px -apple-system, 'Segoe UI', sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("DEPOT · " + String(name || "").toUpperCase(), W / 2, -96);
-  ctx.restore();
-}
 function drawShip(st, time) {
   var s = st.ship;
   ctx.save();
@@ -852,17 +648,12 @@ function drawShip(st, time) {
 }
 function render(state, time) {
   var snap = Core.snapshot(state);
-  var hueIdx = state.endless ? (Core.fnv1a(state.lane.seed) % 8) : (state.lane.district || 0);
+  var hueIdx = Core.fnv1a(state.lane.seed) % 8;
   ctx.save();
   if (shake > 0.2) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
   drawBackground(state.depth, time, hueIdx);
-  /* depot */
-  if (!state.endless) {
-    var dy = Core.screenY(state, state.lane.length);
-    if (dy > -240 && dy < H + 240) drawDepot(dy, time, Core.DISTRICTS[state.lane.district].name);
-  }
   /* beacons */
-  var bs = state.endless ? state.beacons : state.lane.beacons;
+  var bs = state.beacons;
   var nb = Core.snapshot(state).nextBeacon;
   for (var i = 0; i < bs.length; i++) {
     var b = bs[i];
@@ -877,6 +668,24 @@ function render(state, time) {
     ctx.translate(Math.max(24, Math.min(W - 24, nb.x)), 20);
     ctx.fillStyle = "#57ffc7";
     ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(8, 5); ctx.lineTo(-8, 5); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  /* boss telegraph: a standing banner while one approaches, its name
+     while it is on you — the warning never depends on catching a
+     one-second floater (cold playtest, v1.1) */
+  if (snap.bossAhead) {
+    var bName = snap.bossAhead.name.toUpperCase();
+    var bText = snap.bossAhead.active ? bName : "⚠ " + bName + " AHEAD";
+    ctx.save();
+    ctx.font = "700 14px system-ui, sans-serif";
+    var bW = ctx.measureText(bText).width + 26;
+    ctx.fillStyle = "rgba(8, 8, 22, 0.62)";
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(W / 2 - bW / 2, 44, bW, 26, 13); else ctx.rect(W / 2 - bW / 2, 44, bW, 26);
+    ctx.fill();
+    ctx.fillStyle = snap.bossAhead.active ? "#ffd9a8" : "#ffb59d";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(bText, W / 2, 58);
     ctx.restore();
   }
   /* meteors (verts keyed by depth: stable per rock, no state kept) */
@@ -911,11 +720,11 @@ function render(state, time) {
   }
 }
 
-/* attract mode: the game flies itself behind the start screen */
+/* attract mode: the game flies the lane itself behind the start screen */
 var attract = null;
 function ensureAttract() {
   if (!attract) {
-    attract = Core.createRun(endlessLane("attract"), {});
+    attract = Core.createRun();
   }
   return attract;
 }
@@ -931,7 +740,7 @@ function stepAttract(dt) {
     if (ahead > 0 && ahead < 240 && Math.abs(m.x - s.x) < m.r + 40) ix += (m.x >= s.x ? -0.7 : 0.7);
   }
   Core.stepRun(st, { x: Math.max(-1, Math.min(1, ix)), y: (470 - s.y) / 90 }, dt);
-  if (st.done) attract = Core.createRun(endlessLane("attract"), {});
+  if (st.done) attract = Core.createRun();
 }
 
 /* ---------------- HUD ---------------- */
@@ -944,20 +753,13 @@ function updateHUD() {
     ch.textContent = "chain " + run.chain + " · ×" + mult.toFixed(2).replace(/0$/, "");
   } else ch.textContent = "";
   var dv = el("sf-deliv");
-  if (dv) dv.textContent = runCfg.kind === "district"
-    ? "deliveries " + run.deliveries + " / " + run.lane.beacons.length
-    : "deliveries " + run.deliveries;
+  if (dv) dv.textContent = fmtScore(Math.round(run.depth / 10)) + " m · deliveries " + run.deliveries +
+    (run.bosses > 0 ? " · " + run.bosses + (run.bosses === 1 ? " boss" : " bosses") : "");
   el("sf-parcel-fill").style.width = run.integrity + "%";
   el("sf-parcel-fill").style.background = run.integrity > 50 ? "#ffb347" : (run.integrity > 25 ? "#ff8a5c" : "#ff5c47");
   el("sf-parcel-pct").textContent = run.integrity + "%";
   var pf = el("sf-progress-fill");
-  if (runCfg.kind === "district") {
-    pf.style.width = Math.min(100, run.depth / run.lane.length * 100) + "%";
-    pf.parentElement.style.display = "block";
-  } else {
-    pf.style.width = "100%";
-    pf.parentElement.style.display = "none";
-  }
+  pf.parentElement.style.display = "none"; /* an endless lane has no route bar */
   if (performance.now() - hintShownAt > 7000) el("sf-hint").style.opacity = "0";
 }
 

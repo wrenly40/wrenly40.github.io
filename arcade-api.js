@@ -104,10 +104,17 @@
      championship standing for this browser's player. */
   function recordResult(game, result) {
     var passport = getPassport();
-    var g = passport.games[game] || { plays: 0, finishes: 0, bestMedal: "none", bestScore: 0, lastPlayed: 0 };
+    var g = passport.games[game] || { plays: 0, finishes: 0, bestMedal: "none", bestScore: 0, bestRunMedal: "none", bestRunDeliveries: 0, lastPlayed: 0 };
     g.plays += 1;
     if (result.finished) g.finishes += 1;
-    if (typeof result.score === "number" && result.score > g.bestScore) g.bestScore = result.score;
+    if (typeof result.score === "number" && result.score > g.bestScore) {
+      g.bestScore = result.score;
+      /* the best run as one run: its medal and its deliveries are
+         kept together — the Starfall championship derives its
+         points from exactly this pair (see the v1.1 report) */
+      g.bestRunMedal = result.medal || "none";
+      g.bestRunDeliveries = typeof result.deliveries === "number" ? result.deliveries : 0;
+    }
     var order = ["none", "bronze", "silver", "gold", "wren"];
     if (result.medal && order.indexOf(result.medal) > order.indexOf(g.bestMedal)) g.bestMedal = result.medal;
     g.lastPlayed = Date.now();
