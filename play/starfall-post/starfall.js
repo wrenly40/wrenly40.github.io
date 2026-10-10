@@ -777,6 +777,18 @@ function updateHUD() {
 
 /* ---------------- main loop ---------------- */
 var lastTs = 0, lastSnapTs = 0;
+/* The game also sits inside longer pages now (home, game page).
+   While the frame is scrolled out of view, idle screens (start,
+   results) stop stepping and rendering the attract run — an
+   attract loop nobody can see should not cost the page its
+   scroll. A run in progress is never gated, and on the play page
+   the frame is always in view, so nothing changes there. */
+var stageVisible = true;
+if (window.IntersectionObserver) {
+  new IntersectionObserver(function (entries) {
+    stageVisible = entries[0].isIntersecting;
+  }, { threshold: 0.02 }).observe(document.getElementById("sf-stage"));
+}
 window.addEventListener("beforeunload", function () { snapshotRun(); });
 function loop(ts) {
   requestAnimationFrame(loop);
@@ -810,7 +822,7 @@ function loop(ts) {
     if (shake > 0) shake = Math.max(0, shake - dt * 26);
     render(run, time);
     if (!hud.hidden) updateHUD();
-  } else {
+  } else if (stageVisible) {
     stepAttract(dt);
     render(attract, time);
   }

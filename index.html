@@ -16,6 +16,7 @@
 <meta name="twitter:description" content="One new free browser game every Friday, each a different genre, playable for its week and then kept in the Vault. No downloads, no accounts.">
 <meta name="twitter:image" content="https://wrenly40.github.io/games/starfall-post/assets/starfall-lane.png">
 <link rel="stylesheet" href="arcade.css">
+<link rel="stylesheet" href="play/starfall-post/starfall.css">
 </head>
 <body>
 <div class="wrap">
@@ -42,7 +43,7 @@
     <button class="like-btn" id="like-btn" aria-pressed="false">♥ Like this game</button>
     <span class="muted small" id="like-count"></span>
   </div>
-  <img class="hero-shot" src="games/starfall-post/assets/starfall-lane.png" alt="The courier skiff flying the meteor lane toward a lit beacon">
+  <div id="game"><p class="muted">Loading the skiff…</p></div>
 </section>
 
 <section class="section" aria-labelledby="signup-h">
@@ -66,6 +67,8 @@
 
 </div>
 <script src="arcade-api.js"></script>
+<script src="play/starfall-post/starfall-core.js"></script>
+<script src="play/starfall-post/starfall.js"></script>
 <script>
 (function () {
   var slug = "starfall-post";
