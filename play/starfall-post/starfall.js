@@ -26,7 +26,13 @@
    beacon's ring is the delivery — the v1.2 activity gate no longer
    applies to capture, only to near-miss credit). Delivery counts
    change materially, so saves move to v6 keys; v5 records do not
-   carry (passport records are the adapter's and stay). */
+   carry (passport records are the adapter's and stay).
+
+   v1.5: the boss round (in the core: bosses are full sections now —
+   longer, narrower, tighter, and The Orbit's boulder travels with
+   the ship). Boss geometry changes what a run's records mean, so
+   saves move to v7 keys; v6 records do not carry (passport records
+   are the adapter's and stay). */
 (function () {
 "use strict";
 var Core = window.StarfallCore;
@@ -225,7 +231,7 @@ var Sound = {
 document.addEventListener("pointerdown", function () { Sound.ensure(); }, { once: true });
 
 /* ---------------- save ---------------- */
-var SAVE_KEY = "starfall.save.v6";
+var SAVE_KEY = "starfall.save.v7";
 function loadSave() {
   try {
     var s = JSON.parse(localStorage.getItem(SAVE_KEY));
@@ -243,7 +249,7 @@ var save = loadSave();
  * is written the moment anything is earned, so a refresh can never
  * lose it; the snapshot additionally lets a mid-run pilot pick the
  * run itself back up. */
-var RUN_KEY = "starfall.run.v6";
+var RUN_KEY = "starfall.run.v7";
 function snapshotRun() {
   if (!run || run.done || screen !== "run") return;
   try {

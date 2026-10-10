@@ -55,7 +55,24 @@
    Anti-camping stands on its other two legs — depth pays nothing
    and beacons are placed off the safe centre line — re-proven by
    the hover suite. Delivery counts change materially, so saves
-   move to v6 keys (in starfall.js). */
+   move to v6 keys (in starfall.js).
+
+   v1.5 (owner's playtest of the live v1.4): the bosses were "way
+   too short and easy" — they are now real sections, roughly two
+   and a half times as long and built to bite. The Gates is
+   twenty-nine walls with a narrower, fast-walking gap; The
+   Slalom is twenty-nine crossings on a tighter clock; The
+   Orbit's boulder no longer sits at one depth waiting to be
+   passed — it travels with the ship through the whole zone,
+   weaving across the field while its satellites sweep, so the
+   whole zone is the fight.
+   Tier scaling steepens on every pattern. Boss zones now span
+   several chunks: generation is zone-aware (the field yields to
+   the pattern inside the zone span and is untouched outside it),
+   and a boss's anchor chunk is retained until the zone is past
+   so its descriptor survives the whole fight. Run comparability
+   changes with the geometry, so saves move to v7 keys (in
+   starfall.js). */
 (function (global) {
 "use strict";
 
@@ -229,25 +246,44 @@ function clearBubbles(meteors, beacons) {
 
 /* ---------------- mini-bosses ----------------
    Bosses live at fixed depths — the first at 24,000 px, then one
-   every 30,000 px — each anchored at a chunk start, each wholly
-   inside its chunk, with a clear approach stretch before it (the
-   telegraph: the pattern is seen entering, never an instant kill;
-   the presentation adds a warning as it nears). Three patterns
-   cycle by boss index k (pattern = k mod 3); every return of a
-   pattern is one escalation tier up (tier = floor(k/3)): gaps
-   narrow, rings gain satellites and spin faster. Surviving a boss
-   (flying past its end) pays 300 + 100 × tier.
+   every 30,000 px — each anchored at a chunk start. Since v1.5 a
+   boss is a SECTION, not a moment: its zone runs 10,000–13,100 px
+   (roughly two and a half times the v1.4 spans) across several
+   chunks, with a clear approach stretch before the first feature
+   (the telegraph: the pattern is seen entering, never an instant
+   kill; the presentation adds a warning as it nears). Three
+   patterns cycle by boss index k (pattern = k mod 3); every
+   return of a pattern is one escalation tier up
+   (tier = floor(k/3)): gaps narrow, crossings tighten, rings gain
+   satellites and spin faster. Surviving a boss (flying past its
+   end) pays 300 + 100 × tier. A zone always ends well clear of
+   the next boss's start (worst case end = start + 13,100 against
+   a 30,000 px cadence). The verifier asserts each pattern's
+   channel numerically, and the boss-evidence driver flies the
+   reference pilots through every zone.
 
-   0 · THE GATES — a run of rock walls, one gap each; the gap walks
-       along a seeded path in steps the ship can always make.
-   1 · THE ORBIT — a huge boulder with satellites circling it. The
-       ring never reaches the field's edges: the outside is always
-       open, and the ring's own spacing can be threaded.
-   2 · THE SLALOM — walls whose gaps alternate far left / far right,
-       forcing full crossings on a clock the ship can always meet.
-   The verifier asserts each pattern's channel numerically. */
+   0 · THE GATES — twenty-nine rock walls, one gap each; the gap
+       walks along a seeded path in steps the reachability budget
+       allows after the sway takes its share (the verifier checks
+       the same arithmetic) — and the walls come every ~1.2 s,
+       inside any reaction window, so the walk must be read
+       ahead, not reacted to. The wall rocks sway with the lane's
+       own drift, so the gap breathes as it comes. Endurance is
+       the test: twenty-nine threads of a narrowing needle.
+   1 · THE ORBIT — a huge boulder with satellites circling it.
+       The boulder waits ahead of the zone, then TRAVELS with the
+       ship through it: its centre holds a lead on the ship's
+       depth while weaving across the field and sweeping up and
+       down it, so the satellite disc is a threat the whole way,
+       not a single pass. It stops short of the zone's end and is
+       passed one last time on the way out.
+   2 · THE SLALOM — twenty-nine walls whose gaps alternate far
+       left / far right, forcing full crossings on a clock the
+       ship can always meet — with far less recovery between
+       crossings than v1.4 allowed. */
 var BOSS_FIRST = 24000, BOSS_EVERY = 30000;
 var BOSS_NAMES = ["The Gates", "The Orbit", "The Slalom"];
+var BOSS_MAX_ZONE = 13100;     /* the longest zone (The Gates) */
 function bossIndexForChunk(ci) {
   var start = ci * CHUNK;
   if (start < BOSS_FIRST || (start - BOSS_FIRST) % BOSS_EVERY !== 0) return -1;
@@ -255,57 +291,79 @@ function bossIndexForChunk(ci) {
 }
 function bossBonus(k) { return 300 + 100 * Math.floor(k / 3); }
 
-function wallRocks(depth, gapC, gapW, seedI0) {
-  /* One solid row of anchored rock across the field except the gap.
-     Rocks are r=15 spaced 23 px apart (overlapping — no through-hole),
-     and a rock is omitted only if it would narrow the gap. */
+function wallRocks(depth, gapC, gapW, seedI0, drift, phase0) {
+  /* One solid row of rock across the field except the gap. Rocks
+     are r=15 spaced 23 px apart (overlapping — no through-hole),
+     and a rock is omitted only if it would narrow the gap. Since
+     v1.5 the wall is built of the lane's own rock: every rock
+     sways with the drift the ramp has reached at this depth (its
+     own phase, like field rock), so the gap breathes and wanders
+     as it comes at you — read it late and it has moved. */
   var out = [];
   for (var x = 15; x <= W - 15; x += 23) {
     if (Math.abs(x - gapC) < gapW / 2 + 7) continue;
-    out.push({ depth: depth, x: x, r: 15, drift: 0, phase: 0,
-               spin: 0.35, seedI: seedI0 + out.length });
+    var si = seedI0 + out.length;
+    out.push({ depth: depth, x: x, r: 15, drift: drift,
+               phase: phase0 + ((si * 2654435761) % 628) / 100,
+               spin: 0.35, seedI: si });
   }
   return out;
 }
-function buildBoss(k, rng) {
+function buildBoss(k) {
+  /* A boss's geometry is a pure function of its index alone (its
+     own seeded stream), so every chunk the zone touches rebuilds
+     the identical pattern. */
+  var rng = mulberry32(fnv1a(SEED + ":boss:" + k));
   var start = BOSS_FIRST + k * BOSS_EVERY;
   var pattern = k % 3, tier = Math.floor(k / 3);
   var meteors = [], boss = null, end;
+  /* Wall patterns sway with the lane's drift at this depth
+     (capped): the reachability budget the verifier asserts is
+     spent on the gap walk AND the sway, with margin — the
+     channel proof (§ boss channels) uses the same arithmetic. */
+  var drift = Math.min(40, paramsAt(start).drift * 0.8);
+  var closing0 = scrollAt(start) * 1.15;
   if (pattern === 0) {                                   /* The Gates */
-    var gapW = Math.max(150, 260 - 30 * tier);
-    var walls = 6, spacing = 700, first = start + 900;
+    var walls = 29, spacing = 400, first = start + 900;
+    var gapW = Math.round(100 + 2 * drift - 7 * tier);
+    var stepBound = Math.max(120, SHIP_VX * (spacing / closing0) - 30 - 2 * drift - 25);
     var c = 240 + (rng() - 0.5) * 120, prev = c;
     for (var i = 0; i < walls; i++) {
-      var step = (rng() - 0.5) * 480;
+      var step = (rng() - 0.5) * 2 * stepBound;
       c = Math.max(gapW / 2 + 20, Math.min(W - gapW / 2 - 20, prev + step));
-      meteors = meteors.concat(wallRocks(first + i * spacing, c, gapW, 1000 + i * 40));
+      meteors = meteors.concat(wallRocks(first + i * spacing, c, gapW, 1000 + i * 40, drift, i * 0.7));
       prev = c;
     }
-    end = first + walls * spacing;
+    end = start + 13100;
     boss = { pattern: 0, name: BOSS_NAMES[0], start: start, end: end, tier: tier,
-             gapW: gapW, spacing: spacing, walls: walls };
+             gapW: gapW, spacing: spacing, walls: walls, drift: drift };
   } else if (pattern === 1) {                            /* The Orbit */
-    var n = Math.min(8, 5 + tier);
-    var omega = Math.min(0.7, 0.35 + 0.07 * tier);
-    var cy = start + 2600;
-    meteors.push({ depth: cy, x: W / 2, r: 46, drift: 0, phase: 0,
-                   spin: 0.12, seedI: 2000 });
-    boss = { pattern: 1, name: BOSS_NAMES[1], start: start, end: cy + 900, tier: tier,
-             cx: W / 2, cyDepth: cy, R: 110, n: n, omega: omega,
-             rockR: 15, phase0: rng() * Math.PI * 2 };
+    /* No static rocks at all: the boulder and its satellites are
+       computed from the run state by orbitRocks (§ simulation) —
+       the boulder travels with the ship, so its geometry cannot
+       live in a chunk. Every tunable sits here, in the
+       descriptor. */
+    boss = { pattern: 1, name: BOSS_NAMES[1], start: start, end: start + 10000, tier: tier,
+             cx: W / 2, cyDepth: start + 750,
+             R: 135, n: Math.min(11, 8 + tier), omega: Math.min(0.95, 0.78 + 0.06 * tier),
+             rockR: 15, bodyR: 46,
+             xAmp: 115, xRate: 0.26, yAmp: 175, yRate: 0.40, yMid: 320,
+             park: start + 750, stopShort: 350,
+             phase0: rng() * Math.PI * 2, phX: rng() * Math.PI * 2, phY: rng() * Math.PI * 2 };
     end = boss.end;
   } else {                                               /* The Slalom */
-    var gapW2 = Math.max(170, 240 - 25 * tier);
-    var spacing2 = Math.max(475, 550 - 25 * tier);
-    var walls2 = 8, first2 = start + 800;
-    var amp = Math.min(150, (W - gapW2) / 2 - 30);
+    var spacing2 = Math.max(380, 430 - 15 * tier);
+    var gapW2 = Math.round(106 + 2 * drift - 7 * tier);
+    var walls2 = 29, first2 = start + 800;
+    var stepBound2 = Math.max(120, SHIP_VX * (spacing2 / closing0) - 30 - 2 * drift - 25);
+    var amp = Math.min(140, (stepBound2 - 24) / 2);
     for (var j = 0; j < walls2; j++) {
       var cc = W / 2 + (j % 2 === 0 ? -amp : amp) + (rng() - 0.5) * 24;
-      meteors = meteors.concat(wallRocks(first2 + j * spacing2, cc, gapW2, 3000 + j * 40));
+      meteors = meteors.concat(wallRocks(first2 + j * spacing2, cc, gapW2, 3000 + j * 40, drift, j * 0.7));
     }
-    end = first2 + walls2 * spacing2;
+    end = start + 13000;
     boss = { pattern: 2, name: BOSS_NAMES[2], start: start, end: end, tier: tier,
-             gapW: gapW2, spacing: spacing2, walls: walls2 };
+             gapW: gapW2, spacing: spacing2, walls: walls2, drift: drift };
   }
   return { meteors: meteors, boss: boss };
 }
@@ -313,19 +371,21 @@ function buildBoss(k, rng) {
 /* One chunk of the canonical lane: a pure function of its index.
    Field parameters are sampled at the chunk's start depth (the
    ramp's steepest slope moves any parameter by less than 7 units
-   across a chunk). A boss chunk holds the boss pattern and no
-   beacons — the boss bonus replaces them. */
+   across a chunk). The field is generated exactly as it always
+   was; then, if a boss zone (§ mini-bosses) overlaps the chunk,
+   the pattern takes the zone's span: field rocks and beacons
+   inside [zone.start, zone.end) are dropped and the boss's own
+   rocks for this chunk's span are laid in. Outside every zone the
+   chunk is identical to the pre-v1.5 lane — the filtering only
+   ever removes, and only inside a zone. The boss descriptor rides
+   on the zone's anchor chunk, where bossOf looks for it. */
 function generateChunk(idx) {
   var rng = mulberry32(fnv1a(SEED + ":chunk:" + idx));
   var ph = seedPhases(SEED);
   var from = idx * CHUNK, to = from + CHUNK;
-  var bk = bossIndexForChunk(idx);
-  if (bk >= 0) {
-    var built = buildBoss(bk, rng);
-    return { meteors: built.meteors, beacons: [], boss: built.boss };
-  }
   var p = paramsAt(from);
   var field = buildField(rng, p, from, to, ph);
+  var meteors = field.meteors;
   var beacons = [];
   for (var i = 0; i < 2; i++) {
     var bd = from + (i + 0.5) * CHUNK / 2 + (rng() - 0.5) * 800;
@@ -342,8 +402,23 @@ function generateChunk(idx) {
     if (bx < 56) bx = 56; if (bx > W - 56) bx = W - 56;
     beacons.push({ depth: Math.round(bd), x: Math.round(bx) });
   }
-  clearBubbles(field.meteors, beacons);
-  return { meteors: field.meteors, beacons: beacons, boss: null };
+  clearBubbles(meteors, beacons);
+  /* boss zones overlapping this chunk take their span */
+  var boss = null;
+  var kLo = Math.max(0, Math.floor((from - BOSS_FIRST - BOSS_MAX_ZONE) / BOSS_EVERY));
+  for (var k = kLo; BOSS_FIRST + k * BOSS_EVERY < to; k++) {
+    var built = buildBoss(k);
+    var zb = built.boss;
+    if (zb.end <= from) continue;
+    meteors = meteors.filter(function (m) { return m.depth < zb.start || m.depth >= zb.end; });
+    beacons = beacons.filter(function (b) { return b.depth < zb.start || b.depth >= zb.end; });
+    for (var bi = 0; bi < built.meteors.length; bi++) {
+      var bm = built.meteors[bi];
+      if (bm.depth >= from && bm.depth < to) meteors.push(bm);
+    }
+    if (bossIndexForChunk(idx) === k) boss = zb;
+  }
+  return { meteors: meteors, beacons: beacons, boss: boss };
 }
 
 /* ---------------- run state + simulation ---------------- */
@@ -376,9 +451,14 @@ function ensureChunks(state) {
   for (var i = 0; i <= need; i++) {
     if (!state.chunks[i]) state.chunks[i] = generateChunk(i);
   }
-  /* drop chunks far behind to bound memory */
+  /* drop chunks far behind to bound memory — except a boss's
+     anchor chunk, which carries the descriptor bossOf reads: it
+     is kept until the zone is fully past, however many chunks
+     the zone spans (v1.5) */
   var keys = Object.keys(state.chunks);
   for (var k = 0; k < keys.length; k++) {
+    var ch = state.chunks[keys[k]];
+    if (ch.boss && state.depth < ch.boss.end + 1600) continue;
     if ((+keys[k] + 1) * CHUNK < state.depth - 1600) delete state.chunks[keys[k]];
   }
 }
@@ -399,12 +479,30 @@ function bossOf(state, k) {
   var ch = state.chunks[ci];
   return ch ? ch.boss : null;
 }
-/* Current satellite positions of an Orbit boss: pure f(time). */
+/* The Orbit's centre, as a pure function of the run state
+   (v1.5): the boulder waits parked at boss.park; once the ship
+   closes in it travels — holding a lead on the ship's depth so
+   its screen height is the weave's y(t), crossing the field on
+   x(t) — until it stops boss.stopShort short of the zone's end
+   and is passed for the last time. The clamps are max/min of
+   continuous functions, so the centre never jumps. */
+function orbitCenter(state, boss) {
+  var yc = boss.yMid + boss.yAmp * Math.sin(state.time * boss.yRate + boss.phY);
+  var xc = W / 2 + boss.xAmp * Math.sin(state.time * boss.xRate + boss.phX);
+  var cd = shipDepthOf(state) + (ANCHOR_Y - yc);
+  if (cd < boss.park) cd = boss.park;
+  if (cd > boss.end - boss.stopShort) cd = boss.end - boss.stopShort;
+  return { x: xc, depth: cd, yc: yc };
+}
+/* The Orbit's rocks right now: the boulder body and its
+   satellites, all from orbitCenter — one list for the collision
+   pass and the snapshot, so what is drawn is what can hit. */
 function orbitRocks(state, boss) {
-  var out = [];
+  var c = orbitCenter(state, boss);
+  var out = [{ x: c.x, depth: c.depth, r: boss.bodyR, spin: 0.12 }];
   for (var j = 0; j < boss.n; j++) {
     var a = boss.phase0 + state.time * boss.omega + j * Math.PI * 2 / boss.n;
-    out.push({ x: boss.cx + Math.cos(a) * boss.R, depth: boss.cyDepth + Math.sin(a) * boss.R,
+    out.push({ x: c.x + Math.cos(a) * boss.R, depth: c.depth + Math.sin(a) * boss.R,
                r: boss.rockR, spin: 0.8 });
   }
   return out;
@@ -648,6 +746,7 @@ var api = {
   corridorCenter: corridorCenter, seedPhases: seedPhases,
   createRun: createRun, stepRun: stepRun, finalScore: finalScore, reviveRun: reviveRun,
   medalForRun: medalForRun, snapshot: snapshot, meteorX: meteorX,
+  orbitCenter: orbitCenter, orbitRocks: orbitRocks,
   screenY: screenY, shipDepthOf: shipDepthOf
 };
 if (typeof module !== "undefined" && module.exports) module.exports = api;
