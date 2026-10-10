@@ -72,7 +72,35 @@
    and a boss's anchor chunk is retained until the zone is past
    so its descriptor survives the whole fight. Run comparability
    changes with the geometry, so saves move to v7 keys (in
-   starfall.js). */
+   starfall.js).
+
+   v1.6 (owner's playtest of the live v1.5): "at least 1.5x more
+   difficult, and each cycle of boss more and more difficult."
+   Two moves. (1) The whole lane lifts: the ramp keeps v1.5's
+   opening exactly (the first 12,000 px are the learning stretch)
+   and then climbs steeply to a harder plateau by 24,000 px —
+   scroll 295 → 335, row gap 43 → 38, sway 90 → 108, corridor
+   halfW 55 → 48 — with denser, bigger rocks (radius ×1.28, the
+   extra-rock weights up). The beacon band (70–150 px off the
+   centre line) is the one parameter that could NOT move: at
+   85–170 the reference pilots' delivery rate fell by a third
+   and the Wren medal left proof reach (the delivery evidence
+   is in the v1.6 report) — delivery difficulty is carried by
+   the density, size and sway around the beacons instead.
+   Where a full 1.5×
+   would break the survivability proof the parameter goes as
+   far as the proof allows (the v1.6 report tabulates the factor
+   actually applied to each). (2) Boss escalation is now
+   formula-driven and unbounded: every pattern's hardness is an
+   asymptotic function of tier — wall gaps follow a guaranteed
+   worst-instant span schedule that tightens toward a floor
+   above the fairness minimum, wall spacing tightens and wall
+   counts grow into the same zone length, wall sway grows, The
+   Orbit gains satellites (cap 12), spin and weave — each
+   formula monotone in tier and bounded by its asymptote, so
+   the channel proofs hold at tier 40 as they do at tier 0.
+   Run comparability changes again, so saves move to v8 keys
+   (in starfall.js). */
 (function (global) {
 "use strict";
 
@@ -128,33 +156,36 @@ function chunkHash(chunk) {
 
 /* ---------------- the ramp ----------------
    Every difficulty parameter is a function of depth (px). All rise
-   together from a gentle opening to a hard plateau reached at
-   roughly 30,000 px (about two minutes into a surviving run) and
+   together from a gentle opening to a hard plateau and are
    sustained from there — the lane never gets easier again, and
    the corridor guarantee (§ lane generation) holds at every
    depth, so the limit on a run is always the pilot, never the
    geometry. (v1.2: the ramp bites sooner and its plateau sits
-   past v1.1's on every axis — scroll 250 → 275, row gap 52 → 46,
-   extra-rock 0.92 → 0.97, sway 72 → 84, corridor halfW 62 → 58.
-   v1.3 lifts the plateau a little further — scroll → 295,
-   gap → 43, sway → 90, halfW → 55 — and brings it in from
-   ~34,400 px to ~30,000, blended in between 12,000 and
-   24,000 px so the opening stays exactly v1.2's (§ rampT).)
+   past v1.1's on every axis. v1.3 lifts the plateau a little
+   further — scroll → 295, gap → 43, sway → 90, halfW → 55 —
+   blended in between 12,000 and 24,000 px.)
    On top of the ramp sit the mini-bosses (§ below): the first at
    24,000 px, then one every 30,000 px. */
-/* The v1.3 blend: until 12,000 px the parameters are exactly
-   v1.2's (both curves are below their caps there, so the plain
-   expressions ARE the v1.2 values) — chunks 0–2 are generated
-   from parameters sampled at their starts (0 / 6,000 / 12,000),
-   so the opening lane a first-timer learns is byte-identical to
-   the live game. From 12,000 to 24,000 px the parameters blend
-   to the steeper v1.3 curve; its plateaus hold from ~30,000 px. */
-function rampT(d) { var t = (d - 12000) / 12000; return t < 0 ? 0 : t > 1 ? 1 : t; }
-function scrollAt(d) { var t = rampT(d); return Math.min(295, (175 + d * 0.0029) * (1 - t) + (175 + d * 0.004) * t); }
-function gapAt(d)    { var t = rampT(d); return Math.max(43, (108 - d * 0.0018) * (1 - t) + (108 - d * 0.002167) * t); }
-function extraAt(d)  { var t = rampT(d); return Math.min(0.97, (0.42 + d * 0.000016) * (1 - t) + (0.42 + d * 0.0000183) * t); }
-function driftAt(d)  { var t = rampT(d); return Math.min(90, (22 + d * 0.0018) * (1 - t) + (22 + d * 0.002267) * t); }
-function halfWAt(d)  { var t = rampT(d); return Math.max(55, (80 - d * 0.00064) * (1 - t) + (80 - d * 0.000833) * t); }
+/* The v1.6 shape: until 12,000 px the parameters are exactly the
+   opening expressions every version since v1.2 has used (the
+   plain expressions below ARE those values) — the first two
+   chunks stay the welcoming learning stretch. From 12,000 px a
+   smoothstep climb (§ climbT) takes each parameter from its
+   12,000 px value to the v1.6 plateau by 24,000 px: scroll 335,
+   row gap 38, extra 0.99, sway 108, corridor halfW 48. The
+   plateau is reached sooner and sits higher than v1.5's on every
+   axis; the corridor floor is what caps halfW: the centre
+   line's slope can eat at most ~5.1 px of the placement
+   clearance, so 48 keeps the worst-case flying clearance above
+   the verifier's 40 px floor by construction, not by sampling
+   luck (at 45 the sampled minimum was 40.7 but the bound was
+   39.9). */
+function climbT(d) { var t = (d - 12000) / 12000; t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); }
+function scrollAt(d) { return d <= 12000 ? 175 + d * 0.0029 : 209.8 + 125.2 * climbT(d); }
+function gapAt(d)    { return d <= 12000 ? 108 - d * 0.0018 : 86.4 - 48.4 * climbT(d); }
+function extraAt(d)  { return d <= 12000 ? 0.42 + d * 0.000016 : 0.612 + 0.378 * climbT(d); }
+function driftAt(d)  { return d <= 12000 ? 22 + d * 0.0018 : 43.6 + 64.4 * climbT(d); }
+function halfWAt(d)  { return d <= 12000 ? 80 - d * 0.00064 : 72.32 - 24.32 * climbT(d); }
 function paramsAt(d) {
   return { scroll: scrollAt(d), gap: gapAt(d), extra: extraAt(d),
            drift: driftAt(d), halfW: halfWAt(d) };
@@ -211,9 +242,11 @@ function buildField(rng, opts, depthFrom, depthTo, ph) {
     var depth = depthFrom + i * opts.gap + rng() * opts.gap * 0.5;
     if (depth < 500) continue;                    /* calm launch stretch */
     var center = corridorCenter(ph, depth);
-    var count = 1 + (rng() < opts.extra ? 1 : 0) + (rng() < opts.extra * 0.35 ? 1 : 0) + (rng() < opts.extra * 0.15 ? 1 : 0);
+    var count = 1 + (rng() < opts.extra ? 1 : 0) + (rng() < opts.extra * 0.5 ? 1 : 0) + (rng() < opts.extra * 0.25 ? 1 : 0);
     for (var k = 0; k < count; k++) {
-      var r = 10 + Math.pow(rng(), 1.6) * 18;   /* 10..28, small ones common */
+      /* v1.6: the v1.5 radius distribution scaled by 1.28 —
+         12.8..35.8, small ones still common */
+      var r = (10 + Math.pow(rng(), 1.6) * 18) * 1.28;
       var drift = opts.drift * (0.4 + rng() * 0.9);
       var side = rng() < 0.5 ? -1 : 1;
       /* clearance includes the rock's whole sway: at no point in its
@@ -248,28 +281,52 @@ function clearBubbles(meteors, beacons) {
    Bosses live at fixed depths — the first at 24,000 px, then one
    every 30,000 px — each anchored at a chunk start. Since v1.5 a
    boss is a SECTION, not a moment: its zone runs 10,000–13,100 px
-   (roughly two and a half times the v1.4 spans) across several
-   chunks, with a clear approach stretch before the first feature
-   (the telegraph: the pattern is seen entering, never an instant
-   kill; the presentation adds a warning as it nears). Three
-   patterns cycle by boss index k (pattern = k mod 3); every
-   return of a pattern is one escalation tier up
-   (tier = floor(k/3)): gaps narrow, crossings tighten, rings gain
-   satellites and spin faster. Surviving a boss (flying past its
-   end) pays 300 + 100 × tier. A zone always ends well clear of
-   the next boss's start (worst case end = start + 13,100 against
-   a 30,000 px cadence). The verifier asserts each pattern's
-   channel numerically, and the boss-evidence driver flies the
-   reference pilots through every zone.
+   across several chunks, with a clear approach stretch before
+   the first feature (the telegraph: the pattern is seen
+   entering, never an instant kill; the presentation adds a
+   warning as it nears). Three patterns cycle by boss index k
+   (pattern = k mod 3); every return of a pattern is one
+   escalation tier up (tier = floor(k/3)). Surviving a boss
+   (flying past its end) pays 300 + 100 × tier. A zone always
+   ends well clear of the next boss's start (worst case end =
+   start + 13,100 against a 30,000 px cadence). The verifier
+   asserts each pattern's channel numerically, and the
+   boss-evidence driver flies the reference pilots through
+   every zone.
 
-   0 · THE GATES — twenty-nine rock walls, one gap each; the gap
-       walks along a seeded path in steps the reachability budget
-       allows after the sway takes its share (the verifier checks
-       the same arithmetic) — and the walls come every ~1.2 s,
-       inside any reaction window, so the walk must be read
-       ahead, not reacted to. The wall rocks sway with the lane's
-       own drift, so the gap breathes as it comes. Endurance is
-       the test: twenty-nine threads of a narrowing needle.
+   Escalation (v1.6) is formula-driven and unbounded: every
+   hardness quantity is a monotone function of tier bounded by
+   an asymptote that itself respects the fairness floors, so
+   cycle 30 is harder than cycle 3 and still provably flyable.
+   The wall patterns share one gap law: the declared gap width
+   is built from WF(tier) = 80 + 17·0.75^tier — the guaranteed
+   free span at the worst sway instant, before the wall grid's
+   share (the rock-omission rule bounds the grid's narrowing at
+   16 px, so the measured worst span is at least WF − 6 at every
+   tier; the fairness floor is 66) — plus twice the sway plus a
+   10 px grid allowance. Wall sway itself grows with tier
+   (drift × (1 + 0.3·(1 − 0.75^tier)), 40 → 52), wall spacing
+   tightens toward its own floor and the wall count grows into
+   the fixed zone length. The Orbit's satellites rise 8 → 12
+   (stepping up from the second cycle), its ring radius grows
+   120 → 135, its spin and weave rise toward caps chosen so
+   the pattern's total speed stays under the ship's vertical
+   speed and the threadable arc stays at or above 40 px (both
+   asserted per tier in the verifier, and true at the asymptotes
+   by the same arithmetic). Tier 0 of the wall patterns is
+   v1.5's boss, modulo the harder lane around it (the ramp's
+   plateau scroll sets the walls' closing speed); The Orbit's
+   tier 0 ring is deliberately a touch smaller than v1.5's —
+   the escalation formulas carry its difficulty from tier 1 up.
+
+   0 · THE GATES — rock walls, one gap each (29 at tier 0, more
+       as tiers tighten the spacing); the gap walks along a
+       seeded path in steps the reachability budget allows after
+       the sway takes its share (the verifier checks the same
+       arithmetic) — and the walls come faster than any reaction
+       window, so the walk must be read ahead, not reacted to.
+       The wall rocks sway, so the gap breathes as it comes.
+       Endurance is the test: threads of a narrowing needle.
    1 · THE ORBIT — a huge boulder with satellites circling it.
        The boulder waits ahead of the zone, then TRAVELS with the
        ship through it: its centre holds a lead on the ship's
@@ -277,10 +334,11 @@ function clearBubbles(meteors, beacons) {
        down it, so the satellite disc is a threat the whole way,
        not a single pass. It stops short of the zone's end and is
        passed one last time on the way out.
-   2 · THE SLALOM — twenty-nine walls whose gaps alternate far
-       left / far right, forcing full crossings on a clock the
-       ship can always meet — with far less recovery between
-       crossings than v1.4 allowed. */
+   2 · THE SLALOM — walls whose gaps alternate far left / far
+       right, forcing crossings on a clock the ship can always
+       meet; the crossing amplitude is whatever the reachability
+       budget leaves after sway, so at deep tiers the pattern's
+       bite is frequency, sway and gap rather than amplitude. */
 var BOSS_FIRST = 24000, BOSS_EVERY = 30000;
 var BOSS_NAMES = ["The Gates", "The Orbit", "The Slalom"];
 var BOSS_MAX_ZONE = 13100;     /* the longest zone (The Gates) */
@@ -318,15 +376,22 @@ function buildBoss(k) {
   var pattern = k % 3, tier = Math.floor(k / 3);
   var meteors = [], boss = null, end;
   /* Wall patterns sway with the lane's drift at this depth
-     (capped): the reachability budget the verifier asserts is
-     spent on the gap walk AND the sway, with margin — the
-     channel proof (§ boss channels) uses the same arithmetic. */
-  var drift = Math.min(40, paramsAt(start).drift * 0.8);
+     (capped), grown by tier (v1.6: ×1 → ×1.3 asymptotically):
+     the reachability budget the verifier asserts is spent on
+     the gap walk AND the sway, with margin — the channel proof
+     (§ boss channels) uses the same arithmetic. */
+  var drift = Math.round(Math.min(40, paramsAt(start).drift * 0.8) * (1 + 0.3 * (1 - Math.pow(0.75, tier))));
   var closing0 = scrollAt(start) * 1.15;
+  /* The wall patterns' shared gap law (v1.6, § mini-bosses):
+     declared width from the guaranteed worst-instant span
+     schedule WF(tier) = 80 + 17·0.75^tier (97 at tier 0,
+     tightening toward 80), plus twice the sway, plus the
+     10 px grid allowance. */
+  var gapW = Math.round(80 + 17 * Math.pow(0.75, tier) + 2 * drift + 10);
   if (pattern === 0) {                                   /* The Gates */
-    var walls = 29, spacing = 400, first = start + 900;
-    var gapW = Math.round(100 + 2 * drift - 7 * tier);
-    var stepBound = Math.max(120, SHIP_VX * (spacing / closing0) - 30 - 2 * drift - 25);
+    var spacing = Math.round(302 + 98 * Math.pow(0.78, tier));
+    var walls = Math.floor(11200 / spacing) + 1, first = start + 900;
+    var stepBound = Math.max(48, SHIP_VX * (spacing / closing0) - 30 - 2 * drift - 25);
     var c = 240 + (rng() - 0.5) * 120, prev = c;
     for (var i = 0; i < walls; i++) {
       var step = (rng() - 0.5) * 2 * stepBound;
@@ -343,20 +408,32 @@ function buildBoss(k) {
        the boulder travels with the ship, so its geometry cannot
        live in a chunk. Every tunable sits here, in the
        descriptor. */
+    /* v1.6 escalation, all asymptotic in tier (§ mini-bosses):
+       satellites 8 → 12 (the count steps up from the second
+       cycle — tier 1 still flies 8 — and the arc floor caps it
+       as R grows), ring radius 120 → 135, spin 0.78 → 0.90,
+       weave amplitude and rate up — the weave + tip speed stays
+       under SHIP_VY at every tier and at the asymptote (240 of
+       250). Tier 0's ring is smaller than v1.5's (R 120 vs 135):
+       the first Orbit is the pattern's introduction, and the
+       escalation formulas, not the first draw, carry the
+       difficulty — by tier 2 the ring is back to ~131 and the
+       count and spin are past v1.5's. */
     boss = { pattern: 1, name: BOSS_NAMES[1], start: start, end: start + 10000, tier: tier,
              cx: W / 2, cyDepth: start + 750,
-             R: 135, n: Math.min(11, 8 + tier), omega: Math.min(0.95, 0.78 + 0.06 * tier),
-             rockR: 15, bodyR: 46,
-             xAmp: 115, xRate: 0.26, yAmp: 175, yRate: 0.40, yMid: 320,
+             R: 120 + 15 * (1 - Math.pow(0.75, tier)), n: Math.min(12, 8 + Math.max(0, tier - 1)), omega: 0.90 - 0.12 * Math.pow(0.75, tier),
+             rockR: 15 - 2.5 * (1 - Math.pow(0.75, tier)), bodyR: 46,
+             xAmp: 125 - 10 * Math.pow(0.75, tier), xRate: 0.28 - 0.02 * Math.pow(0.75, tier),
+             yAmp: 190 - 15 * Math.pow(0.75, tier), yRate: 0.44 - 0.04 * Math.pow(0.75, tier), yMid: 320,
              park: start + 750, stopShort: 350,
              phase0: rng() * Math.PI * 2, phX: rng() * Math.PI * 2, phY: rng() * Math.PI * 2 };
     end = boss.end;
   } else {                                               /* The Slalom */
-    var spacing2 = Math.max(380, 430 - 15 * tier);
-    var gapW2 = Math.round(106 + 2 * drift - 7 * tier);
-    var walls2 = 29, first2 = start + 800;
-    var stepBound2 = Math.max(120, SHIP_VX * (spacing2 / closing0) - 30 - 2 * drift - 25);
-    var amp = Math.min(140, (stepBound2 - 24) / 2);
+    var spacing2 = Math.round(318 + 112 * Math.pow(0.78, tier));
+    var gapW2 = gapW;
+    var walls2 = Math.floor(12040 / spacing2) + 1, first2 = start + 800;
+    var stepBound2 = Math.max(48, SHIP_VX * (spacing2 / closing0) - 30 - 2 * drift - 25);
+    var amp = Math.min(140, Math.max(12, (stepBound2 - 24) / 2));
     for (var j = 0; j < walls2; j++) {
       var cc = W / 2 + (j % 2 === 0 ? -amp : amp) + (rng() - 0.5) * 24;
       meteors = meteors.concat(wallRocks(first2 + j * spacing2, cc, gapW2, 3000 + j * 40, drift, j * 0.7));
@@ -390,10 +467,13 @@ function generateChunk(idx) {
   for (var i = 0; i < 2; i++) {
     var bd = from + (i + 0.5) * CHUNK / 2 + (rng() - 0.5) * 800;
     /* v1.2: a beacon is never placed on or near the safe centre
-       line — the offset is always 70–150 px to one side (mirrored
-       at the field edges so the offset survives). Sitting in the
+       line — the offset is always to one side (mirrored at the
+       field edges so the offset survives). Sitting in the
        corridor keeps you alive; it never delivers anything. The
-       job is always out on the rock side of the lane. */
+       job is always out on the rock side of the lane. v1.6: the
+       band is unchanged in v1.6 (70–150 px — the delivery
+       evidence in the v1.6 report shows why it could not move
+       out without taking the Wren medal out of proof reach). */
     var ctr = corridorCenter(ph, bd);
     var off = (70 + rng() * 80) * (rng() < 0.5 ? -1 : 1);
     var bx = ctr + off;
@@ -479,16 +559,39 @@ function bossOf(state, k) {
   var ch = state.chunks[ci];
   return ch ? ch.boss : null;
 }
+/* The Orbit's clock (v1.6): the encounter is a function of
+   PROGRESS through the zone — ship depth relative to the zone
+   start, in units of the zone's own scroll seconds — never of
+   run time. Until v1.5 the weave and spin ran on state.time:
+   depth and time are locked together in a live run, so every
+   player met the same encounter, but its alignment was an
+   accident of the ramp's integral — any difficulty change
+   silently re-rolled every boss's phase, and a trial that
+   teleports to the zone (the gate's own instrument) measured a
+   neighbouring encounter, not the shipped one: at some arrival
+   offsets the v1.5 tier-0 Orbit shreds the channel pilot, at
+   others it barely touches it (difficulty-evidence-v16
+   diagnostic). Progress-anchored, the encounter is a designed
+   constant of the canonical lane: trials measure exactly what
+   a full run flies. (The clock's rate still breathes with the
+   ship's own vertical movement — climbing stretches the
+   encounter, diving compresses it; at cruise it runs 1:1, which
+   is the rate the channel proof asserts.) */
+function orbitClock(state, boss) {
+  return (shipDepthOf(state) - boss.start) / scrollAt(boss.start);
+}
 /* The Orbit's centre, as a pure function of the run state
    (v1.5): the boulder waits parked at boss.park; once the ship
    closes in it travels — holding a lead on the ship's depth so
    its screen height is the weave's y(t), crossing the field on
    x(t) — until it stops boss.stopShort short of the zone's end
    and is passed for the last time. The clamps are max/min of
-   continuous functions, so the centre never jumps. */
+   continuous functions, so the centre never jumps. (v1.6: t is
+   the progress clock above, not run time.) */
 function orbitCenter(state, boss) {
-  var yc = boss.yMid + boss.yAmp * Math.sin(state.time * boss.yRate + boss.phY);
-  var xc = W / 2 + boss.xAmp * Math.sin(state.time * boss.xRate + boss.phX);
+  var t = orbitClock(state, boss);
+  var yc = boss.yMid + boss.yAmp * Math.sin(t * boss.yRate + boss.phY);
+  var xc = W / 2 + boss.xAmp * Math.sin(t * boss.xRate + boss.phX);
   var cd = shipDepthOf(state) + (ANCHOR_Y - yc);
   if (cd < boss.park) cd = boss.park;
   if (cd > boss.end - boss.stopShort) cd = boss.end - boss.stopShort;
@@ -499,9 +602,10 @@ function orbitCenter(state, boss) {
    pass and the snapshot, so what is drawn is what can hit. */
 function orbitRocks(state, boss) {
   var c = orbitCenter(state, boss);
+  var t = orbitClock(state, boss);
   var out = [{ x: c.x, depth: c.depth, r: boss.bodyR, spin: 0.12 }];
   for (var j = 0; j < boss.n; j++) {
-    var a = boss.phase0 + state.time * boss.omega + j * Math.PI * 2 / boss.n;
+    var a = boss.phase0 + t * boss.omega + j * Math.PI * 2 / boss.n;
     out.push({ x: c.x + Math.cos(a) * boss.R, depth: c.depth + Math.sin(a) * boss.R,
                r: boss.rockR, spin: 0.8 });
   }

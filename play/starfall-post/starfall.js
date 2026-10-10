@@ -32,7 +32,14 @@
    longer, narrower, tighter, and The Orbit's boulder travels with
    the ship). Boss geometry changes what a run's records mean, so
    saves move to v7 keys; v6 records do not carry (passport records
-   are the adapter's and stay). */
+   are the adapter's and stay).
+
+   v1.6: the difficulty round (in the core: the whole lane lifts
+   to a harder plateau reached sooner, and boss escalation is
+   formula-driven — every cycle harder than the last, without
+   bound). What a run's records mean changes again, so saves move
+   to v8 keys; v7 records do not carry (passport records are the
+   adapter's and stay). */
 (function () {
 "use strict";
 var Core = window.StarfallCore;
@@ -231,7 +238,7 @@ var Sound = {
 document.addEventListener("pointerdown", function () { Sound.ensure(); }, { once: true });
 
 /* ---------------- save ---------------- */
-var SAVE_KEY = "starfall.save.v7";
+var SAVE_KEY = "starfall.save.v8";
 function loadSave() {
   try {
     var s = JSON.parse(localStorage.getItem(SAVE_KEY));
@@ -249,7 +256,7 @@ var save = loadSave();
  * is written the moment anything is earned, so a refresh can never
  * lose it; the snapshot additionally lets a mid-run pilot pick the
  * run itself back up. */
-var RUN_KEY = "starfall.run.v7";
+var RUN_KEY = "starfall.run.v8";
 function snapshotRun() {
   if (!run || run.done || screen !== "run") return;
   try {
