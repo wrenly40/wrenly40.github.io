@@ -188,8 +188,7 @@ root.innerHTML =
       '<div class="sf-hint" id="sf-hint">Steer with a mouse or touch drag, or ← → ↑ ↓. Fly through the lit rings to deliver — the arrow at the top points to the next ring. The lane ends when the parcel does.</div>' +
     '</div>' +
     '<div class="sf-overlay" id="sf-overlay"></div>' +
-  '</div>' +
-  '<p class="sf-under muted">Your best runs, medals and scores are kept in this browser.</p>';
+  '</div>';
 
 var canvas = document.getElementById("sf-canvas");
 var ctx = canvas.getContext("2d");
