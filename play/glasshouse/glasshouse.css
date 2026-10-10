@@ -1,0 +1,163 @@
+/* Glasshouse — the game's own art direction: a watercolour
+   greenhouse. Paper cream, leaf green, sun gold, water blue,
+   terracotta. Deliberately unlike the shell's monochrome and
+   unlike every other game's look. */
+
+:root {
+  --gh-paper: #f7f1df;
+  --gh-paper-2: #f1e8d0;
+  --gh-ink: #40382a;
+  --gh-ink-soft: #7a6c55;
+  --gh-leaf: #5d8a4a;
+  --gh-leaf-deep: #3f6631;
+  --gh-gold: #e9a83b;
+  --gh-gold-soft: #f6cf7d;
+  --gh-water: #4d84ad;
+  --gh-water-soft: #9dc3dd;
+  --gh-clay: #c4703f;
+  --gh-line: #ddd0ae;
+}
+
+#game { max-width: 44rem; margin: 0 auto; }
+
+.gh-wrap {
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--gh-ink);
+}
+.gh-wrap h1, .gh-wrap h2 { font-family: Georgia, "Times New Roman", serif; color: var(--gh-ink); }
+.gh-kicker {
+  text-transform: uppercase; letter-spacing: 0.22em; font-size: 0.7rem;
+  font-weight: 700; color: var(--gh-clay); margin: 0.6rem 0 0;
+}
+.gh-title { font-size: clamp(2.2rem, 6vw, 3.2rem); margin: 0.3rem 0 0.4rem; font-weight: 700; }
+.gh-lede { font-size: 1.13rem; line-height: 1.55; max-width: 34rem; }
+.gh-muted { color: var(--gh-ink-soft); }
+.gh-small { font-size: 0.92rem; }
+
+/* Buttons in the game's own hand */
+.gh-btn {
+  display: inline-block; padding: 0.6rem 1.4rem; border-radius: 999px;
+  background: var(--gh-leaf-deep); color: #fdfaf0; font-family: inherit;
+  font-weight: 700; font-size: 1rem; border: 1px solid var(--gh-leaf-deep);
+  cursor: pointer; text-decoration: none; line-height: 1.35;
+}
+.gh-btn:hover { opacity: 0.88; text-decoration: none; }
+.gh-btn.ghost { background: transparent; color: var(--gh-ink); border-color: var(--gh-line); font-weight: 600; }
+.gh-btn.small { padding: 0.35rem 0.95rem; font-size: 0.92rem; }
+.gh-btn:disabled { opacity: 0.45; cursor: default; }
+.gh-btn-row { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin: 1rem 0; }
+
+.gh-toggle {
+  display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;
+  border: 1px solid var(--gh-line); border-radius: 999px; padding: 0.35rem 0.95rem;
+  background: #fffdf4; font-size: 0.95rem; user-select: none;
+}
+.gh-toggle[aria-pressed="true"] { background: var(--gh-water); border-color: var(--gh-water); color: #fff; }
+
+/* The greenhouse board */
+.gh-topbar {
+  display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; align-items: baseline;
+  justify-content: space-between; margin: 0.4rem 0 0.2rem;
+}
+.gh-topbar .gh-garden-name { font-size: 1.3rem; font-weight: 700; }
+.gh-topbar .gh-stats { color: var(--gh-ink-soft); font-size: 0.95rem; }
+.gh-icon-btn {
+  background: #fffdf4; border: 1px solid var(--gh-line); color: var(--gh-ink);
+  border-radius: 999px; padding: 0.28rem 0.85rem; cursor: pointer; font-family: inherit; font-size: 0.9rem;
+}
+.gh-icon-btn:hover { border-color: var(--gh-ink-soft); }
+
+.gh-board-frame {
+  background:
+    radial-gradient(120% 90% at 20% 0%, rgba(233, 168, 59, 0.10), transparent 55%),
+    radial-gradient(100% 100% at 90% 100%, rgba(77, 132, 173, 0.10), transparent 55%),
+    linear-gradient(160deg, #fbf6e6, var(--gh-paper) 60%, var(--gh-paper-2));
+  border: 1px solid var(--gh-line);
+  border-radius: 18px 22px 16px 24px / 22px 16px 24px 18px;
+  padding: clamp(8px, 2vw, 18px);
+  box-shadow: 0 14px 34px rgba(64, 56, 42, 0.10);
+  margin: 0.8rem auto 0.4rem;
+  max-width: min(94vw, 560px);
+}
+.gh-board { position: relative; width: 100%; }
+.gh-grid {
+  display: grid; gap: 3px; position: relative; z-index: 1;
+}
+.gh-beams {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  z-index: 2; pointer-events: none; overflow: hidden;
+}
+.gh-beams polyline { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.gh-beams .beam-light { stroke: var(--gh-gold); opacity: 0.5; stroke-width: 15; }
+.gh-beams .beam-light-core { stroke: var(--gh-gold-soft); opacity: 0.85; stroke-width: 5; }
+.gh-beams .beam-water { stroke: var(--gh-water); opacity: 0.45; stroke-width: 15; }
+.gh-beams .beam-water-core { stroke: var(--gh-water-soft); opacity: 0.9; stroke-width: 5; }
+.gh-beams .flow { stroke-dasharray: 1 18; animation: gh-flow 1.15s linear infinite; }
+@keyframes gh-flow { to { stroke-dashoffset: -19; } }
+.gh-board.solved .beam-light, .gh-board.solved .beam-water { animation: gh-pulse 1.6s ease-in-out infinite alternate; }
+@keyframes gh-pulse { from { opacity: 0.4; } to { opacity: 0.75; } }
+
+.gh-cell {
+  position: relative; aspect-ratio: 1 / 1; border-radius: 9px;
+  background:
+    radial-gradient(90% 90% at 30% 25%, rgba(255, 255, 255, 0.5), transparent 60%),
+    linear-gradient(150deg, #efe6cc, #e9dcba);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.gh-cell.rot {
+  cursor: pointer; border: 1px solid rgba(122, 108, 85, 0.35);
+  padding: 0; font: inherit; width: 100%;
+  transition: transform 0.08s ease, background 0.15s ease;
+}
+.gh-cell.rot:hover { background: linear-gradient(150deg, #f4ecd2, #eee0bc); }
+.gh-cell.rot:active { transform: scale(0.94); }
+.gh-cell.rot:focus-visible { outline: 2px solid var(--gh-leaf-deep); outline-offset: 1px; }
+.gh-cell svg { width: 88%; height: 88%; display: block; }
+.gh-cell .piece { width: 88%; height: 88%; transition: transform 0.16s ease; }
+.gh-cell.rock { background: linear-gradient(150deg, #e3dccb, #d8d0ba); }
+
+/* seedling need badges */
+.gh-needs { position: absolute; top: 3px; right: 3px; display: flex; gap: 2px; z-index: 3; }
+.gh-need { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid #fffdf4; box-sizing: border-box; }
+.gh-need.need-light { background: var(--gh-gold); border-radius: 50%; }
+.gh-need.need-water { background: var(--gh-water); border-radius: 0 50% 50% 50%; transform: rotate(45deg); }
+.gh-need.met { opacity: 0.25; }
+
+/* Panels and results */
+.gh-panel {
+  background: #fffdf4; border: 1px solid var(--gh-line); border-radius: 14px;
+  padding: 1.1rem 1.25rem; margin: 1rem 0;
+  box-shadow: 0 6px 18px rgba(64, 56, 42, 0.06);
+}
+.gh-panel h2 { margin-top: 0.1rem; }
+.gh-score-line { font-size: 1.15rem; }
+.gh-stamp {
+  display: inline-block; border: 2.5px solid var(--gh-clay); color: var(--gh-clay);
+  border-radius: 8px; padding: 0.12rem 0.7rem; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; font-size: 0.85rem; transform: rotate(-3deg);
+  margin: 0.3rem 0;
+}
+.gh-stamp.perfect { border-color: var(--gh-leaf-deep); color: var(--gh-leaf-deep); }
+.gh-progress { color: var(--gh-ink-soft); font-size: 0.95rem; }
+.gh-garden-list { list-style: none; padding: 0; margin: 0.6rem 0; }
+.gh-garden-list li {
+  display: flex; justify-content: space-between; gap: 1rem; padding: 0.4rem 0.1rem;
+  border-bottom: 1px solid var(--gh-line); font-size: 0.98rem;
+}
+.gh-garden-list .done { color: var(--gh-leaf-deep); font-weight: 700; }
+.gh-name-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 0.8rem 0; }
+.gh-name-row input {
+  flex: 1 1 14rem; padding: 0.55rem 1rem; border-radius: 999px; font-family: inherit;
+  border: 1px solid var(--gh-line); background: var(--gh-paper); color: var(--gh-ink); font-size: 1rem;
+}
+table.gh-board-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; }
+table.gh-board-table th, table.gh-board-table td { text-align: left; padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--gh-line); }
+table.gh-board-table th { color: var(--gh-ink-soft); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; }
+table.gh-board-table td.num, table.gh-board-table th.num { text-align: right; }
+
+@media (max-width: 640px) {
+  .gh-board-frame { padding: 7px; }
+  .gh-grid { gap: 2px; }
+  .gh-need { width: 9px; height: 9px; }
+}

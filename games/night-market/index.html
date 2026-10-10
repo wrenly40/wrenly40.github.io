@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Night Market — dice-placement defence · Wrenworks Arcade</title>
+<meta name="description" content="Night Market: a free dice-placement defence in your browser. Roll the market dice, raise your stalls, and hold the lantern-lit square until dawn. Seven nights, an endless Long Night, and a seeded night every day. No download, no account.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Wrenworks Arcade">
+<meta property="og:title" content="Night Market — dice-placement defence · Wrenworks Arcade">
+<meta property="og:description" content="A free dice-placement defence in your browser. Roll the market dice, raise your stalls, and hold the square until dawn.">
+<meta property="og:url" content="https://wrenly40.github.io/games/night-market/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Night Market — dice-placement defence · Wrenworks Arcade">
+<meta name="twitter:description" content="A free dice-placement defence in your browser. Roll the market dice, raise your stalls, and hold the square until dawn.">
+<link rel="stylesheet" href="../../arcade.css">
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../../index.html">Wrenworks <span>Arcade</span></a>
+  <nav>
+    <a href="../../index.html">This week</a>
+    <a href="../../vault/index.html">Vault</a>
+  </nav>
+</header>
+
+<main>
+<p class="kicker">In the bank · Dice-placement defence</p>
+<h1>Night Market</h1>
+<p>Every night, the things come out of the dark and walk the five lanes of the market square, making for the lantern tree at its heart. You are the keeper. Each hour you roll four market dice — and each die's face is a stall: spend the die to raise that stall on any plot, and your stalls do the rest, firing east down their lanes while the night walks into them. What you roll decides what you can build and where it earns. Hold all seven nights to dawn and the market is yours.</p>
+<p>Nothing is left to luck alone. A die you don't spend becomes a coin, kills pay bounties, and any die can be flipped to any face for three coins — so an unkind roll costs you, but it can never strand you. The skill is in the placing: which lane, which column, and when to pay for the stall the dice didn't offer.</p>
+
+<div class="shots">
+  <figure>
+    <img src="assets/nightmarket-start.png" alt="The Night Market start screen: the seven nights of the campaign, with Tonight's Night and the Long Night below">
+    <figcaption>Seven nights to hold, from the first moths to the Longest Night.</figcaption>
+  </figure>
+  <figure>
+    <img src="assets/nightmarket-board.png" alt="A Night Market board mid-night: stalls raised along the lanes, moths, rats and shades walking west, one die left in the tray">
+    <figcaption>Mid-night on the Longest Night: the stalls hold the lanes, and one die waits to be spent.</figcaption>
+  </figure>
+  <figure>
+    <img src="assets/nightmarket-dawn.png" alt="The Night Market dawn screen after a held night, with the score breakdown and the night's tally">
+    <figcaption>Dawn: the night's tally, and what the holding earned.</figcaption>
+  </figure>
+</div>
+
+<h2>How it plays</h2>
+<ul>
+  <li><strong>The campaign:</strong> seven seeded nights, each harder than the last — moths first, then rats that scamper when hurt, then shades that take two lanterns if they get through. Most players finish the campaign in about 40 to 55 minutes.</li>
+  <li><strong>The dice:</strong> four an hour. A 1 raises a Crumb Cart, a 2 a Lantern Stall, a 3 a Bell Stall (its hits chill the night's step), a 4 a short-range Kettle Stall, a 5 a Firework Stall, and a 6 a Moon Stall. Bank a die for a coin, or flip any die to any face for 3 coins.</li>
+  <li><strong>Scoring:</strong> 10 for every thing turned back, 100 for every lantern still lit at dawn, 150 for holding the night, 250 more if nothing leaked, and a coin for every coin unspent. Fog and festival nights pay a quarter extra.</li>
+  <li><strong>Medals:</strong> bronze for holding all seven nights, silver if your best runs leak ten or fewer in total, gold for four or fewer, and the Wren medal when every night has a no-leak best. A no-leak night earns its star on the night list.</li>
+  <li><strong>Fog and festival:</strong> in fog every stall sees one column less; on a festival night the crowds are bigger and every kill pays an extra coin. Held nights can be replayed with a twist added.</li>
+  <li><strong>The side alley:</strong> on the later nights, some things slip into the square halfway across — watch the dashed column.</li>
+  <li><strong>The Long Night:</strong> an endless night with no dawn, on its own board — hold as many hours as you can.</li>
+  <li><strong>Tonight's Night:</strong> one seeded night, the same for every keeper that day, on its own board.</li>
+  <li><strong>Controls:</strong> tap or click a die, then a plot. Every control is a button, so a keyboard works too, and it plays the same on a phone.</li>
+</ul>
+<p>
+  <span class="btn ghost" aria-disabled="true">In the bank — it opens in its week</span>
+</p>
+<div class="like-row">
+  <button class="like-btn" id="like-btn" aria-pressed="false">♥ Like this game</button>
+  <span class="muted small" id="like-count"></span>
+</div>
+
+<h2>The campaign board</h2>
+<p class="muted small">This board is your own record, kept in your own browser.</p>
+<div id="board-campaign"><p class="muted">No finished campaigns yet. Seven dawns stand between you and the first line of this board.</p></div>
+
+<h2>The Long Night board</h2>
+<p class="muted small">This board is your own record, kept in your own browser.</p>
+<div id="board-endless"><p class="muted">No Long Nights yet.</p></div>
+
+<h2>Tonight's Night board</h2>
+<p class="muted small">This board is your own record, kept in your own browser.</p>
+<div id="board-daily"><p class="muted">No seeded nights held yet.</p></div>
+
+<h2>When this game goes into the Vault</h2>
+<p class="muted">When Night Market's week comes, this page is its home. When the next game arrives after it, this page stays — the boards above become final, the comments stay, and the play button goes. If you want it back, say so in the comments or in a reply to the Friday email — we read them all.</p>
+
+<h2>Comments</h2>
+<p class="muted">Comments are not open yet. Until they are, the like button above is the quickest way to say the game earned its week.</p>
+</main>
+
+<footer class="site">
+  <p>Wrenworks Arcade, made in London. <a href="../../index.html">Back to the arcade</a>.</p>
+</footer>
+
+</div>
+<script src="../../arcade-api.js"></script>
+<script>
+(function () {
+  var slug = "night-market";
+  var btn = document.getElementById("like-btn");
+  var count = document.getElementById("like-count");
+  function renderLike() {
+    var s = ArcadeAPI.getLikes(slug);
+    btn.setAttribute("aria-pressed", s.liked ? "true" : "false");
+    btn.textContent = s.liked ? "♥ Liked" : "♥ Like this game";
+    count.textContent = s.likes === 1 ? "1 player likes this game" :
+      (s.likes > 1 ? s.likes + " players like this game" : "");
+  }
+  btn.addEventListener("click", function () { ArcadeAPI.like(slug); renderLike(); });
+  renderLike();
+  function renderBoard(elId, board) {
+    var rows = ArcadeAPI.getBoard(slug, board);
+    if (!rows.length) return;
+    var html = '<table class="board"><tr><th>Player</th><th class="num">Score</th><th>Detail</th></tr>';
+    rows.slice(0, 10).forEach(function (r) {
+      html += "<tr><td>" + String(r.name).replace(/</g, "&lt;") + '</td><td class="num">' + r.score +
+        "</td><td>" + String(r.detail).replace(/</g, "&lt;") + "</td></tr>";
+    });
+    document.getElementById(elId).innerHTML = html + "</table>";
+  }
+  renderBoard("board-campaign", "campaign");
+  renderBoard("board-endless", "endless");
+  renderBoard("board-daily", "daily");
+})();
+</script>
+</body>
+</html>
