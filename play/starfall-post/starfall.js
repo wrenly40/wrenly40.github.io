@@ -7,7 +7,13 @@
    the deep lane. The district campaign, the free/daily lanes, the
    seed box and the modifiers are gone. Saves moved to v3 keys: v1.0
    campaign records and v1.1-district snapshots do not carry into
-   the endless game (passport records are the adapter's and stay). */
+   the endless game (passport records are the adapter's and stay).
+
+   v1.2 (FD-037): the owner's fix round — the bottom-band render
+   fix, no height throttle, a harder ramp, and no score for sitting
+   still (all in the core). Score semantics changed (depth pays
+   nothing now), so saves move to v4 keys; v3 records do not carry
+   (passport records are the adapter's and stay). */
 (function () {
 "use strict";
 var Core = window.StarfallCore;
@@ -115,7 +121,7 @@ var Sound = {
 document.addEventListener("pointerdown", function () { Sound.ensure(); }, { once: true });
 
 /* ---------------- save ---------------- */
-var SAVE_KEY = "starfall.save.v3";
+var SAVE_KEY = "starfall.save.v4";
 function loadSave() {
   try {
     var s = JSON.parse(localStorage.getItem(SAVE_KEY));
@@ -133,7 +139,7 @@ var save = loadSave();
  * is written the moment anything is earned, so a refresh can never
  * lose it; the snapshot additionally lets a mid-run pilot pick the
  * run itself back up. */
-var RUN_KEY = "starfall.run.v3";
+var RUN_KEY = "starfall.run.v4";
 function snapshotRun() {
   if (!run || run.done || screen !== "run") return;
   try {
@@ -342,6 +348,7 @@ function medalDot(m) {
 function showStart() {
   screen = "start";
   hud.hidden = true;
+  particles.length = 0; floaters.length = 0; effects.length = 0; /* no run debris over the panel */
   overlay.style.display = "flex";
   var record = "";
   if (save.bestScore > 0) {
@@ -376,6 +383,10 @@ function showStart() {
 function showResults(st, final, medal, newBest) {
   screen = "results";
   hud.hidden = true;
+  /* clear the run's floaters/particles: they only advance during a
+     run, so a leftover "Parcel hit" floater would otherwise hang
+     frozen behind the results panel forever (cold playtest v1.2) */
+  particles.length = 0; floaters.length = 0; effects.length = 0;
   overlay.style.display = "flex";
   var depthM = fmtScore(Math.round(st.depth / 10));
   var medalRow = medal !== "none"
@@ -613,8 +624,10 @@ function drawShip(st, time) {
   ctx.save();
   ctx.translate(s.x, s.y);
   if (st.invulnT > 0 && Math.sin(time * 26) > 0.2) ctx.globalAlpha = 0.45;
-  /* engine flame */
-  var fl = 13 + Math.sin(time * 42) * 3 + (Core.ANCHOR_Y - s.y) * 0.02;
+  /* engine flame — longer while the ship is climbing (v1.2: it no
+     longer grows with height itself; the lane runs at one speed
+     wherever the ship sits) */
+  var fl = 13 + Math.sin(time * 42) * 3 + Math.max(0, -s.vy) * 0.03;
   ctx.fillStyle = "rgba(87,255,199,0.85)";
   ctx.beginPath();
   ctx.moveTo(-4.5, 15); ctx.lineTo(0, 15 + Math.max(6, fl)); ctx.lineTo(4.5, 15);
@@ -739,7 +752,7 @@ function stepAttract(dt) {
     var ahead = s.y - m.y;
     if (ahead > 0 && ahead < 240 && Math.abs(m.x - s.x) < m.r + 40) ix += (m.x >= s.x ? -0.7 : 0.7);
   }
-  Core.stepRun(st, { x: Math.max(-1, Math.min(1, ix)), y: (470 - s.y) / 90 }, dt);
+  Core.stepRun(st, { x: Math.max(-1, Math.min(1, ix)), y: (150 - s.y) / 90 }, dt);
   if (st.done) attract = Core.createRun();
 }
 

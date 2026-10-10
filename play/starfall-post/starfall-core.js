@@ -16,7 +16,24 @@
    speed and stops when the input stops — no momentum, no drift, no
    wind-push; the lane's scroll, density, patterns and bosses are the
    difficulty. A run ends only when the parcel breaks (five hits).
-   The district campaign, the daily lane and the modifiers are gone. */
+   The district campaign, the daily lane and the modifiers are gone.
+
+   v1.2 (FD-037, owner's playtest of the live v1.1) fixes four
+   things. (1) The render list (snapshot) now covers every rock the
+   collision pass can touch: v1.1 rendered only rocks down to 60 px
+   of depth behind the ship's anchor while collisions ran to 320 px
+   behind, so rocks in the bottom band could hit invisibly —
+   anything collidable is now drawn until it is fully past the
+   bottom and out of reach. (2) The height throttle is gone: flying
+   high no longer speeds the lane up, nor dropping back slow it —
+   scroll is a function of depth only. (3) The ramp bites sooner
+   and plateaus harder (full hardness from ~34,000 px, past every
+   v1.1 plateau value). (4) Camping is dead: depth pays nothing,
+   beacons are never placed on the safe centre line (you must leave
+   it to deliver), and delivery + near-miss credit require the ship
+   to have actually flown in the last second or so — a parked ship
+   scores nothing and, outside the corridor's passing shelter,
+   does not live long either. */
 (function (global) {
 "use strict";
 
@@ -29,7 +46,8 @@ var SHIP_VY = 250;
 var HIT_DAMAGE = 20;           /* parcel integrity lost per meteor hit */
 var CAPTURE_R = 58;            /* beacon delivery radius (screen px) */
 var NEAR_R = 17;               /* extra px beyond touching = near miss */
-var DEPTH_POINTS = 0.05;       /* score per px flown: 1 point per 20 px */
+/* v1.2: there are no depth points. The score is deliveries, near
+   misses and boss bonuses — all of it earned by flying. */
 
 /* ---------------- the lane ---------------- */
 var SEED = "starfall-post";    /* the one canonical seed, for everyone */
@@ -72,17 +90,20 @@ function chunkHash(chunk) {
 /* ---------------- the ramp ----------------
    Every difficulty parameter is a function of depth (px). All rise
    together from a gentle opening to a hard plateau reached at
-   roughly 60,000 px (about five minutes into a surviving run) and
-   sustained from there — the lane never gets easier again, and the
-   corridor guarantee (§ lane generation) holds at every depth, so
-   the limit on a run is always the pilot, never the geometry.
+   roughly 34,000 px (about two and a half minutes into a surviving
+   run) and sustained from there — the lane never gets easier
+   again, and the corridor guarantee (§ lane generation) holds at
+   every depth, so the limit on a run is always the pilot, never
+   the geometry. (v1.2: the ramp bites sooner and its plateau sits
+   past v1.1's on every axis — scroll 250 → 275, row gap 52 → 46,
+   extra-rock 0.92 → 0.97, sway 72 → 84, corridor halfW 62 → 58.)
    On top of the ramp sit the mini-bosses (§ below): the first at
    24,000 px, then one every 30,000 px. */
-function scrollAt(d) { return Math.min(250, 158 + d * 0.0016); }
-function gapAt(d)    { return Math.max(52, 118 - d * 0.0011); }
-function extraAt(d)  { return Math.min(0.92, 0.34 + d * 0.000010); }
-function driftAt(d)  { return Math.min(72, 16 + d * 0.00095); }
-function halfWAt(d)  { return Math.max(62, 82 - d * 0.00033); }
+function scrollAt(d) { return Math.min(275, 175 + d * 0.0029); }
+function gapAt(d)    { return Math.max(46, 108 - d * 0.0018); }
+function extraAt(d)  { return Math.min(0.97, 0.42 + d * 0.000016); }
+function driftAt(d)  { return Math.min(84, 22 + d * 0.0018); }
+function halfWAt(d)  { return Math.max(58, 80 - d * 0.00064); }
 function paramsAt(d) {
   return { scroll: scrollAt(d), gap: gapAt(d), extra: extraAt(d),
            drift: driftAt(d), halfW: halfWAt(d) };
@@ -90,10 +111,13 @@ function paramsAt(d) {
 
 /* ---------------- medals (best-run achievements) ----------------
    A run earns the highest medal whose BOTH marks it reaches: depth
-   in px and deliveries. Calibrated from the policy-bot death
-   distribution and the cold playtest (see the v1.1 report): bronze
-   is a learner's good first run, Wren is a deep-lane feat that also
-   demands a long unbroken chain. */
+   in px and deliveries. Calibrated on the cold playtests (v1.1
+   report §7; v1.2 report §7 re-checked them against the harder
+   lane and kept them): in the v1.2 cold session, trying runs
+   banked Bronze routinely (1,900–2,200 m, 7 deliveries), the best
+   run earned Silver (4,289 m, 12 deliveries), and Gold and Wren
+   stayed unbanked — bronze is a learner's good run, Wren a
+   deep-lane feat that also demands a long unbroken chain. */
 var MEDAL_MARKS = [
   { medal: "wren",   depth: 72000, deliveries: 24, chain: 10 },
   { medal: "gold",   depth: 48000, deliveries: 16, chain: 0 },
@@ -271,7 +295,16 @@ function generateChunk(idx) {
   var beacons = [];
   for (var i = 0; i < 2; i++) {
     var bd = from + (i + 0.5) * CHUNK / 2 + (rng() - 0.5) * 800;
-    var bx = corridorCenter(ph, bd) + (rng() - 0.5) * 250;
+    /* v1.2: a beacon is never placed on or near the safe centre
+       line — the offset is always 70–150 px to one side (mirrored
+       at the field edges so the offset survives). Sitting in the
+       corridor keeps you alive; it never delivers anything. The
+       job is always out on the rock side of the lane. */
+    var ctr = corridorCenter(ph, bd);
+    var off = (70 + rng() * 80) * (rng() < 0.5 ? -1 : 1);
+    var bx = ctr + off;
+    if (bx < 56) bx = ctr - off;
+    if (bx > W - 56) bx = ctr - off;
     if (bx < 56) bx = 56; if (bx > W - 56) bx = W - 56;
     beacons.push({ depth: Math.round(bd), x: Math.round(bx) });
   }
@@ -288,6 +321,12 @@ function createRun() {
     integrity: 100, invulnT: 0,
     chain: 0, bestChain: 0, lastDeliveryT: -99,
     deliveries: 0, nearMisses: 0, hits: 0,
+    /* v1.2 anti-camping: recent self-driven flight, in px, decayed
+       with a ~0.9 s half-life each step and topped up by the ship's
+       actual movement. Deliveries and near-miss credit require it
+       to be at least ACTIVITY_MIN — the lane only pays a pilot who
+       is flying. */
+    recentMove: 0,
     raw: 0, done: false, cleared: false,
     bosses: 0, nextBoss: 0, bossWarned: -1,
     chunks: {},
@@ -340,6 +379,8 @@ function meteorX(state, m) {
 function shipDepthOf(state) { return state.depth + (ANCHOR_Y - state.ship.y); }
 function screenY(state, depth) { return ANCHOR_Y - (depth - shipDepthOf(state)); }
 
+var ACTIVITY_MIN = 50;         /* px of recent flight that counts as "flying" */
+
 var STEP_EVENTS = [];
 function stepRun(state, input, dt) {
   STEP_EVENTS.length = 0;
@@ -350,6 +391,7 @@ function stepRun(state, input, dt) {
 
   /* Direct control (FD-035): velocity IS the input. No momentum,
      no drag, no wind — the position is the player's, exactly. */
+  var px0 = s.x, py0 = s.y;
   s.vx = input.x * SHIP_VX;
   s.vy = input.y * SHIP_VY;
   s.x += s.vx * dt;
@@ -358,13 +400,17 @@ function stepRun(state, input, dt) {
   if (s.x > W - 22) s.x = W - 22;
   if (s.y < 92) s.y = 92;
   if (s.y > H - 64) s.y = H - 64;
+  /* anti-camping bookkeeping: how much the ship actually moved
+     under its pilot in roughly the last second */
+  var moved = Math.sqrt((s.x - px0) * (s.x - px0) + (s.y - py0) * (s.y - py0));
+  state.recentMove = state.recentMove * Math.pow(0.5, dt / 0.9) + moved;
 
-  /* forward speed: the ramp's scroll at this depth, faster flown
-     high, slower flown low; depth itself pays a steady trickle */
-  var factor = 1 + (ANCHOR_Y - s.y) / ANCHOR_Y * 0.35;
-  var prevDepth = state.depth;
-  state.depth += scrollAt(state.depth) * factor * dt;
-  state.raw += (state.depth - prevDepth) * DEPTH_POINTS;
+  /* forward speed: the ramp's scroll at this depth, and nothing
+     else (v1.2 — the height throttle is gone: wherever the ship
+     sits on screen, the lane runs at exactly this rate). Depth
+     itself pays nothing; the score is earned by flying (§ scoring
+     in the beacon and meteor passes below). */
+  state.depth += scrollAt(state.depth) * dt;
   var sd = shipDepthOf(state);
 
   if (state.invulnT > 0) state.invulnT -= dt;
@@ -416,7 +462,9 @@ function stepRun(state, input, dt) {
     }
     if (by > H + 140) continue;
     var bdx = b.x - s.x, bdy = by - s.y;
-    if (bdx * bdx + bdy * bdy < CAPTURE_R * CAPTURE_R) {
+    /* a ring only pays a pilot who is flying (v1.2): drift into it
+       parked and it passes unclaimed, like any beacon let go by */
+    if (bdx * bdx + bdy * bdy < CAPTURE_R * CAPTURE_R && state.recentMove >= ACTIVITY_MIN) {
       b.done = "delivered";
       state.chain += 1;
       if (state.chain > state.bestChain) state.bestChain = state.chain;
@@ -452,7 +500,11 @@ function stepRun(state, input, dt) {
     if (rel < -320) {                       /* fully behind: settle near-miss */
       if (!m.settled) {
         m.settled = true;
-        if (!m.hit && m.minDist != null && m.minDist < m.r + SHIP_R + NEAR_R) {
+        /* near-miss credit only for a pass the pilot actually flew
+           (v1.2): activePass is set below, at closest approach, if
+           the ship was flying then. A rock drifting past a parked
+           ship settles silently. */
+        if (!m.hit && m.activePass && m.minDist != null && m.minDist < m.r + SHIP_R + NEAR_R) {
           state.nearMisses += 1; state.raw += 25;
           ev({ type: "nearMiss", gained: 25, x: meteorX(state, m), y: screenY(state, m.depth) });
         }
@@ -464,6 +516,7 @@ function stepRun(state, input, dt) {
     var dx = mx - s.x, dy = my - s.y;
     var dist = Math.sqrt(dx * dx + dy * dy);
     if (m.minDist == null || dist < m.minDist) m.minDist = dist;
+    if (dist < m.r + SHIP_R + NEAR_R && state.recentMove >= ACTIVITY_MIN) m.activePass = true;
     if (state.invulnT <= 0 && dist < m.r + SHIP_R - 2) {
       m.hit = true; m.dead = true;
       registerHit(mx, my);
@@ -478,6 +531,7 @@ function finalScore(state) { return Math.round(state.raw); }
    objects carry the delivery/death flags. Boss state (nextBoss,
    bossWarned) is plain data and revives with the state. */
 function reviveRun(state) {
+  if (state.recentMove == null) state.recentMove = 0;   /* snapshots predating the field */
   ensureChunks(state); collectEndless(state);
   return state;
 }
@@ -492,22 +546,33 @@ function nextBeacon(state) {
 function snapshot(state) {
   var sd = shipDepthOf(state);
   var nb2 = nextBeacon(state);
+  var boss = bossOf(state, state.nextBoss);
   var near = [], ms = state.meteors;
   for (var i = 0; i < ms.length; i++) {
     var m = ms[i];
     if (m.dead) continue;
     var rel = m.depth - sd;
-    if (rel < -60 || rel > 900) continue;
+    /* Render window (v1.2 parity fix, FD-037): this list IS what
+       the page draws, so it must contain every rock the collision
+       pass can touch. Collisions are evaluated for rel in
+       [-320, 900]; the window here is wider on both ends, so a
+       rock is drawn until it is fully past the bottom of the
+       screen (rel -380 → screen y 812, below the 720 field with
+       its whole radius) and beyond collision reach (the lowest a
+       ship can sit is y 656; a rock centred at 752+ can no longer
+       touch it). In v1.1 this window stopped at rel -60 — rocks
+       vanished at screen y 492 and stayed lethal for another
+       260 px of travel. That was the invisible-asteroid bug. */
+    if (rel < -380 || rel > 940) continue;
     near.push({ x: meteorX(state, m), y: screenY(state, m.depth), r: m.r, depth: m.depth,
                 baseX: m.x, drift: m.drift, phase: m.phase, spin: m.spin });
   }
-  var boss = bossOf(state, state.nextBoss);
   if (boss && boss.pattern === 1 && sd > boss.start - 1200 && sd < boss.end + 400) {
     var orocks2 = orbitRocks(state, boss);
     for (var j = 0; j < orocks2.length; j++) {
       var or2 = orocks2[j];
       var rel2 = or2.depth - sd;
-      if (rel2 < -60 || rel2 > 900) continue;
+      if (rel2 < -380 || rel2 > 940) continue;   /* same render window as the field (v1.2 parity) */
       near.push({ x: or2.x, y: screenY(state, or2.depth), r: or2.r, depth: Math.round(or2.depth),
                   baseX: or2.x, drift: 0, phase: 0, spin: or2.spin });
     }
